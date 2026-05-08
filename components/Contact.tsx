@@ -6,7 +6,7 @@ import { MapPin, Mail, Phone, MessageCircle, Send, CheckCircle } from "lucide-re
 const contactInfo = [
   { icon: MapPin, text: "Lilongwe, Malawi (expanding to Blantyre & Mzuzu)", color: "#f5ab20" },
   { icon: Mail, text: "hello@connectmw.mw", color: "#ec4899" },
-  { icon: Phone, text: "+265 (0) 888 000 000", color: "#10b981" },
+  { icon: Phone, text: "+265 (0) 983933510", color: "#10b981" },
   { icon: MessageCircle, text: "WhatsApp Business available", color: "#25D366" },
 ];
 

@@ -1,8 +1,10 @@
 "use client";
 
+import { Banknote, Phone, ChevronLeft, ChevronRight } from "lucide-react";
+import { useState } from "react";
+
 const services = [
   {
-    emoji: "🏠",
     title: "HomeConnect",
     desc: "Find verified houses, apartments, and student hostels across Malawi. Landlords list with photos, maps, and transparent pricing. No shady agents.",
     features: [
@@ -12,12 +14,15 @@ const services = [
       "In-app contract templates",
       "Transparent commission fees",
     ],
-    tag: "🏘 Rentals & Hostels",
-    image: "https://images.unsplash.com/photo-1560184897-ae75f418493e?w=600&h=400&fit=crop&auto=format",
+    tag: "Rentals & Hostels",
+    images: [
+      "https://images.unsplash.com/photo-1560184897-ae75f418493e?w=600&h=400&fit=crop&auto=format",
+      "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=600&h=400&fit=crop&auto=format",
+      "https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=600&h=400&fit=crop&auto=format",
+    ],
     color: "#f5ab20",
   },
   {
-    emoji: "💅",
     title: "BeautyConnect",
     desc: "Book salons, barbers, nail technicians, and makeup artists in seconds. Browse portfolios, check availability, and pay securely — no more no-shows.",
     features: [
@@ -27,12 +32,15 @@ const services = [
       "At-home service options",
       "Booking reminders",
     ],
-    tag: "✂ Beauty & Personal Care",
-    image: "https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?w=600&h=400&fit=crop&auto=format",
+    tag: "Beauty & Personal Care",
+    images: [
+      "https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?w=600&h=400&fit=crop&auto=format",
+      "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=600&h=400&fit=crop&auto=format",
+      "https://images.unsplash.com/photo-1633681926031-b8c1b69dc75f?w=600&h=400&fit=crop&auto=format",
+    ],
     color: "#f5ab20",
   },
   {
-    emoji: "🔧",
     title: "SpareFinder",
     desc: "Locate auto spares locally with AI image matching. Upload a photo of your part — we scan listings and find it near you. Stop importing when it's around the corner.",
     features: [
@@ -42,17 +50,21 @@ const services = [
       "Delivery partnerships",
       "Vehicle marketplace",
     ],
-    tag: "🚗 Auto Spares & Vehicles",
-    image: "https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=600&h=400&fit=crop&auto=format",
+    tag: "Auto Spares & Vehicles",
+    images: [
+      "https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=600&h=400&fit=crop&auto=format",
+      "https://images.unsplash.com/photo-1533473359331-fd322f5a7c29?w=600&h=400&fit=crop&auto=format",
+      "https://images.unsplash.com/photo-1552519507-88aa2dfa9fdb?w=600&h=400&fit=crop&auto=format",
+    ],
     color: "#f5ab20",
   },
 ];
 
 const paymentMethods = [
-  { icon: "📱", label: "Airtel Money" },
-  { icon: "📲", label: "TNM Mpamba" },
-  { icon: "🏦", label: "Bank Transfer" },
-  { icon: "💵", label: "Cash on Delivery" },
+  { icon: Phone, label: "Airtel Money", bgColor: "#c50610", textColor: "#ffffff" },
+  { icon: Phone, label: "TNM Mpamba", bgColor: "#00a859", textColor: "#ffffff" },
+  { icon: Banknote, label: "Bank Transfer", bgColor: "#34a853", textColor: "#ffffff" },
+  { icon: Banknote, label: "Cash on Delivery", bgColor: "#f5ab20", textColor: "#1a2e42" },
 ];
 
 export default function Services() {
@@ -74,13 +86,14 @@ export default function Services() {
           {paymentMethods.map((pm) => (
             <span
               key={pm.label}
-              className="text-[0.78rem] font-semibold text-[#cde0f0] px-3 py-1.5 rounded-lg"
+              className="text-[0.78rem] font-semibold px-3 py-1.5 rounded-lg inline-flex items-center"
               style={{
-                background: "rgba(255,255,255,0.06)",
+                background: pm.bgColor,
+                color: pm.textColor,
                 border: "1px solid rgba(255,255,255,0.1)",
               }}
             >
-              {pm.icon} {pm.label}
+              {pm.icon && <pm.icon className="w-4 h-4 mr-2" />} {pm.label}
             </span>
           ))}
         </div>
@@ -124,14 +137,34 @@ export default function Services() {
 }
 
 function ServiceCard({
-  emoji,
   title,
   desc,
   features,
   tag,
-  image,
+  images,
   color,
-}: (typeof services)[0]) {
+}: {
+  title: string;
+  desc: string;
+  features: string[];
+  tag: string;
+  images: string[];
+  color: string;
+}) {
+  const [currentImage, setCurrentImage] = useState(0);
+
+  const nextImage = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setCurrentImage((prev) => (prev + 1) % images.length);
+  };
+
+  const prevImage = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setCurrentImage((prev) => (prev - 1 + images.length) % images.length);
+  };
+
   return (
     <div
       className="group relative rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_20px_48px_rgba(0,0,0,0.4)] cursor-default"
@@ -140,13 +173,14 @@ function ServiceCard({
         border: "1px solid rgba(255,255,255,0.07)",
       }}
     >
-      {/* Image Container */}
+      {/* Image Carousel Container */}
       <div className="relative h-48 overflow-hidden">
         <img
-          src={image}
-          alt={title}
+          src={images[currentImage]}
+          alt={`${title} - ${currentImage + 1}`}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
         />
+        
         {/* Gradient overlay on image */}
         <div
           className="absolute inset-0 bg-gradient-to-t"
@@ -154,16 +188,48 @@ function ServiceCard({
             background: `linear-gradient(to bottom, transparent 50%, #1a2e42 100%)`,
           }}
         />
-        {/* Emoji badge on image */}
-        <div
-          className="absolute top-3 left-3 w-10 h-10 rounded-full flex items-center justify-center text-xl backdrop-blur-md"
-          style={{
-            background: "rgba(0,0,0,0.5)",
-            border: "1px solid rgba(255,255,255,0.2)",
-          }}
-        >
-          {emoji}
-        </div>
+
+        {/* Navigation Arrows - only show if more than 1 image */}
+        {images.length > 1 && (
+          <>
+            <button
+              onClick={prevImage}
+              className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center transition-all duration-200 hover:bg-black/70 hover:scale-110"
+              aria-label="Previous image"
+            >
+              <ChevronLeft className="w-5 h-5 text-white" />
+            </button>
+            <button
+              onClick={nextImage}
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center transition-all duration-200 hover:bg-black/70 hover:scale-110"
+              aria-label="Next image"
+            >
+              <ChevronRight className="w-5 h-5 text-white" />
+            </button>
+          </>
+        )}
+
+        {/* Image Indicators */}
+        {images.length > 1 && (
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
+            {images.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setCurrentImage(idx);
+                }}
+                className={`transition-all duration-200 rounded-full ${
+                  currentImage === idx
+                    ? "w-6 h-1.5 bg-[#f5ab20]"
+                    : "w-1.5 h-1.5 bg-white/50 hover:bg-white/80"
+                }`}
+                aria-label={`Go to image ${idx + 1}`}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Content Container */}

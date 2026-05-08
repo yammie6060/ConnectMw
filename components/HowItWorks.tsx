@@ -30,19 +30,16 @@ const steps = [
 
 const mockItems = [
   {
-    icon: "🏠",
     name: "2-Bed Flat, Blantyre",
     sub: "Verified · 0.8km away",
     price: "K45,000/mo",
   },
   {
-    icon: "💅",
     name: "Grace Nails Studio",
     sub: "★ 4.9 · Available today",
     price: "K3,500",
   },
   {
-    icon: "🔧",
     name: "Toyota Vitz – Side Mirror",
     sub: "Matched via photo · 1.2km",
     price: "K12,000",
@@ -154,12 +151,7 @@ export default function HowItWorks() {
                 className="flex items-center gap-3 p-3 rounded-[10px] mb-2.5"
                 style={{ background: "rgba(255,255,255,0.04)" }}
               >
-                <div
-                  className="w-[38px] h-[38px] rounded-[9px] flex items-center justify-center text-lg flex-shrink-0"
-                  style={{ background: "rgba(245,166,35,0.15)" }}
-                >
-                  {item.icon}
-                </div>
+            
                 <div className="flex-1">
                   <div className="text-sm font-medium">{item.name}</div>
                   <div className="text-xs text-[#8ca5bc]">{item.sub}</div>
