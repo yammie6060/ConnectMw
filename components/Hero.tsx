@@ -67,7 +67,7 @@ export default function Hero({ onOpenModal }: HeroProps) {
   return (
     <section
       id="home"
-      className="relative flex flex-col lg:flex-row items-stretch py-40 overflow-hidden bg-[#0d1f2d]"
+      className="relative flex flex-col lg:flex-row items-stretch py-20 overflow-hidden bg-[#0d1f2d]"
     >
       {/* ── LEFT PANEL ── */}
       <div className="relative z-10 flex flex-col justify-center px-[10%] pt-[100px] pb-20 w-full lg:w-1/2 flex-shrink-0">
