@@ -64,7 +64,7 @@ const services = [
     href: "/services/sparefinder",
     cta: "Find spares →",
     images: [
-      "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=700&h=460&fit=crop&auto=format&q=85",
+      "https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=900&h=700&fit=crop&auto=format",
       "https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=700&h=460&fit=crop&auto=format&q=85",
       "https://images.unsplash.com/photo-1530046339160-ce3e530c7d2f?w=700&h=460&fit=crop&auto=format&q=85",
     ],
@@ -83,9 +83,7 @@ const paymentMethods = [
 export default function Services() {
   const handlePaymentClick = (href: string, e: React.MouseEvent) => {
     e.preventDefault();
-    // You can implement modal or redirect logic here
     console.log(`Navigate to: ${href}`);
-    // window.location.href = href; // Uncomment for actual navigation
   };
 
   const handleServiceClick = (href: string, e: React.MouseEvent) => {
