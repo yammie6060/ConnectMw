@@ -61,7 +61,7 @@ const socials = [
 export default function Footer() {
   return (
     <footer
-      className="px-[6%] pt-[60px] pb-8"
+      className="px-[10%] pt-[60px] pb-8"
       style={{
         background: "#0d1f2d",
         borderTop: "1px solid rgba(255,255,255,0.06)",

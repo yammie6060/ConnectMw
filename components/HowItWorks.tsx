@@ -48,7 +48,7 @@ const mockItems = [
 
 export default function HowItWorks() {
   return (
-    <section id="how" className="px-[6%] py-[100px] relative">
+    <section id="how" className="px-[10%] py-[100px] relative">
       <p className="text-[0.75rem] font-semibold tracking-[2px] uppercase text-[#f5ab20] mb-2">
         Simple Process
       </p>

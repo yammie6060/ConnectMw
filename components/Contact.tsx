@@ -52,7 +52,7 @@ export default function Contact() {
   return (
     <section
       id="contact"
-      className="px-[6%] py-[100px] relative"
+      className="px-[10%] py-[100px] relative"
       style={{ background: "#132333" }}
     >
       {/* Background decoration */}
@@ -70,8 +70,8 @@ export default function Contact() {
                 Get In Touch
               </p>
               <h2
-                className="text-[clamp(1.8rem,3.5vw,2.6rem)] font-bold tracking-[-1px] leading-[1.15] mb-3 text-white"
-                style={{ fontFamily: "'Syne', sans-serif" }}
+                className="text-5xl font-bold tracking-[-1px] leading-[1.15] mb-3 text-white"
+                style={{ fontFamily: " sans-serif" }}
               >
                 Let&apos;s Talk Business
               </h2>
@@ -158,7 +158,7 @@ export default function Contact() {
               <div className="w-1 h-8 rounded-full bg-[#f5ab20]" />
               <h3
                 className="text-[1.3rem] font-bold text-white"
-                style={{ fontFamily: "'Syne', sans-serif" }}
+                style={{ fontFamily: "sans-serif" }}
               >
                 Send Us a Message
               </h3>

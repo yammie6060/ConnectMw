@@ -36,18 +36,11 @@ const reviews = [
     name: "Annie Mhango",
     role: "Renter · Blantyre",
   },
-  {
-    stars: 5,
-    text: "I imported spare parts from China twice before finding out they were available locally. ConnectMW's photo matching is smart — it found the exact part I photographed in 3 listings nearby.",
-    initials: "DL",
-    name: "David Lungu",
-    role: "Mechanic & Garage Owner",
-  },
 ];
 
 export default function Reviews() {
   return (
-    <section id="reviews" className="px-[6%] py-[100px] relative">
+    <section id="reviews" className="px-[10%] py-[100px] relative">
       {/* Header */}
       <div className="text-center max-w-[560px] mx-auto mb-14">
         <p className="text-[0.75rem] font-semibold tracking-[2px] uppercase text-[#f5ab20] mb-2">

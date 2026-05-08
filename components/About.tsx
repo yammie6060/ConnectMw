@@ -30,7 +30,7 @@ export default function About() {
   return (
     <section
       id="about"
-      className="px-[6%] py-[10px]"
+      className="px-[10%] py-[10px]"
       style={{ background: "#132333" }}
     >
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">

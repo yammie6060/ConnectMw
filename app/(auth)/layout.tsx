@@ -8,7 +8,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       style={{ background: "#0d1f2d" }}
     >
       {/* Auth navbar */}
-      <header className="flex items-center justify-between px-[6%] h-[68px] border-b border-[rgba(245,166,35,0.12)]">
+      <header className="flex items-center justify-between px-[10%] h-[68px] border-b border-[rgba(245,166,35,0.12)]">
         <Link
           href="/"
           className="font-black text-[1.25rem] text-white no-underline"

@@ -7,7 +7,7 @@ export default function CTABanner() {
 
   return (
     <div
-      className="relative text-center px-[6%] py-[80px] overflow-hidden"
+      className="relative text-center px-[10%] py-[80px] overflow-hidden"
       style={{
         background: "linear-gradient(135deg,#1b4f6a 0%,#132333 100%)",
         borderTop: "1px solid rgba(245,166,35,0.12)",

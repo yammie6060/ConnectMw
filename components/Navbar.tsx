@@ -26,7 +26,7 @@ export default function Navbar() {
   return (
     <>
       <nav
-        className={`fixed top-0 left-0 right-0 z-[1000] flex items-center justify-between px-[6%] h-[68px] transition-all duration-300 ${
+        className={`fixed top-0 left-0 right-0 z-[1000] flex items-center justify-between px-[10%] h-[68px] transition-all duration-300 ${
           scrolled
             ? "bg-[rgba(13,31,45,0.97)] shadow-[0_4px_32px_rgba(0,0,0,0.4)]"
             : "bg-[rgba(13,31,45,0.92)]"
@@ -84,7 +84,7 @@ export default function Navbar() {
           mobileOpen ? "max-h-screen opacity-100" : "max-h-0 opacity-0 overflow-hidden"
         }`}
       >
-        <div className="px-[6%] py-6 flex flex-col gap-4">
+        <div className="px-[10%] py-6 flex flex-col gap-4">
           {navLinks.map((link) => (
             <a
               key={link.href}
