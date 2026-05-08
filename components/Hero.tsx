@@ -112,7 +112,7 @@ export default function Hero({ onOpenModal }: HeroProps) {
 
         {/* Headline */}
         <h1
-          className="text-5xl font-black leading-[1.1] tracking-[-1px] mb-4 text-white"
+          className="text-4xl font-black leading-[1.1] tracking-[-1px] mb-4 text-white"
           style={{
             fontFamily: " sans-serif",
             animation: "fadeUp 0.7s 0.1s ease both",
