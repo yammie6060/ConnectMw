@@ -20,7 +20,7 @@ const services = [
     href: "/services/homeconnect",
     cta: "Find your home →",
     images: [
-      "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=700&h=460&fit=crop&auto=format&q=85",
+      "https://images.unsplash.com/photo-1560184897-ae75f418493e?w=900&h=700&fit=crop&auto=format",
       "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=700&h=460&fit=crop&auto=format&q=85",
       "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=700&h=460&fit=crop&auto=format&q=85",
     ],
@@ -43,7 +43,7 @@ const services = [
     cta: "Book now →",
     images: [
       "https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?w=900&h=700&fit=crop&auto=format&q=85",
-      "https://images.unsplash.com/photo-1582095133179-bfd08e2fb6b9?w=700&h=460&fit=crop&auto=format&q=85",
+      "https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?w=900&h=700&fit=crop&auto=format",
       "https://images.unsplash.com/photo-1526045612212-70caf35c14df?w=700&h=460&fit=crop&auto=format&q=85",
     ],
     color: "#f5ab20",
@@ -107,7 +107,7 @@ export default function Services() {
     <>
       {/* Payment strip */}
       <div
-        className="flex items-center justify-center gap-12 flex-wrap px-[10%] py-5"
+        className="flex items-center justify-center gap-12 flex-wrap px-[6%] py-5"
         style={{
           background: "#1a2e42",
           borderTop: "1px solid rgba(255,255,255,0.06)",
@@ -136,7 +136,7 @@ export default function Services() {
       </div>
 
       {/* Services section */}
-      <section id="services" className="px-[10%] pt-14 pb-[80px]" style={{ background: "#132333" }}>
+      <section id="services" className="px-[6%] pt-14 pb-[80px]" style={{ background: "#132333" }}>
         <div className="flex justify-between items-end flex-wrap gap-6 mb-10">
           <div>
             <p className="text-[0.75rem] font-semibold tracking-[2px] uppercase text-[#f5ab20] mb-2">
