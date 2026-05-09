@@ -5,7 +5,7 @@ const UPCOMING = [
   { id: 1, title: "Hair Braiding – Thandiwe M.",  time: "Today · 10:00 AM",   duration: "2h",  status: "Confirmed", color: "#10b981" },
   { id: 2, title: "Nail Art – Chisomo B.",         time: "Today · 2:00 PM",    duration: "1h",  status: "Pending",   color: "#f5ab20" },
   { id: 3, title: "Makeup – Wedding client",        time: "Tomorrow · 8:00 AM", duration: "3h",  status: "Confirmed", color: "#10b981" },
-  { id: 4, title: "Property Viewing – Kabulonga",  time: "Fri · 11:00 AM",     duration: "30m", status: "Confirmed", color: "#10b981" },
+  { id: 4, title: "Property Viewing – Area 47",  time: "Fri · 11:00 AM",     duration: "30m", status: "Confirmed", color: "#10b981" },
   { id: 5, title: "Eyebrow Threading – Natasha",   time: "Sat · 9:00 AM",      duration: "45m", status: "New",       color: "#3b82f6" },
 ];
 

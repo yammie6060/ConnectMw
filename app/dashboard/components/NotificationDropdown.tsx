@@ -1,189 +1,96 @@
-import { Bell, MessageSquare, CalendarCheck, Package, Star, ChevronRight } from 'lucide-react';
+// NotificationDropdown.tsx
 import { useEffect, useRef } from 'react';
-
-interface Notification {
-  id: number;
-  title: string;
-  detail: string;
-  time: string;
-  unread: boolean;
-  icon: any;
-}
-
-const RECENT_NOTIFICATIONS: Notification[] = [
-  {
-    id: 1,
-    title: "New message received",
-    detail: "Mphatso Banda asked if your item is still available.",
-    time: "8 min ago",
-    unread: true,
-    icon: MessageSquare,
-  },
-  {
-    id: 2,
-    title: "Booking reminder",
-    detail: "Grace Nails Studio appointment is scheduled for tomorrow.",
-    time: "1h ago",
-    unread: true,
-    icon: CalendarCheck,
-  },
-  {
-    id: 3,
-    title: "Order update",
-    detail: "Toyota Vitz Side Mirror quote was received successfully.",
-    time: "Yesterday",
-    unread: false,
-    icon: Package,
-  },
-];
+import { Bell, Package, Home, Sparkles, MessageSquare, X } from 'lucide-react';
 
 interface NotificationDropdownProps {
   isOpen: boolean;
   onClose: () => void;
   onNavigateToAll: () => void;
   color: string;
+  anchorRef?: React.RefObject<HTMLButtonElement>; // pass the bell button ref
 }
 
-export function NotificationDropdown({
-  isOpen,
-  onClose,
-  onNavigateToAll,
-  color,
-}: NotificationDropdownProps) {
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const unreadCount = RECENT_NOTIFICATIONS.filter((item) => item.unread).length;
+const MOCK_NOTIFS = [
+  { id: 1, icon: MessageSquare, text: "New message from Chimwemwe", time: "2m ago", unread: true },
+  { id: 2, icon: Home,          text: "Your booking was confirmed",  time: "1h ago", unread: true },
+  { id: 3, icon: Package,       text: "Order #INV-002 is ready",     time: "3h ago", unread: false },
+  { id: 4, icon: Sparkles,      text: "New deal in your area",       time: "Yesterday", unread: false },
+];
+
+export function NotificationDropdown({ isOpen, onClose, onNavigateToAll, color }: NotificationDropdownProps) {
+  const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        onClose();
-      }
-    }
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
+    if (!isOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+    };
+    // slight delay so the open-click doesn't immediately close
+    const t = setTimeout(() => document.addEventListener('mousedown', handler), 50);
+    return () => { clearTimeout(t); document.removeEventListener('mousedown', handler); };
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
   return (
+    // Fixed overlay anchor — sits above everything
     <div
-      ref={dropdownRef}
-      className="absolute top-[60px] right-4 md:right-6 z-50 w-[360px] rounded-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
+      ref={ref}
       style={{
-        background: "var(--bg-secondary, #132333)",
-        border: "1px solid var(--border-color, rgba(255,255,255,0.07))",
-        boxShadow: "0 16px 40px rgba(0,0,0,0.4)",
+        position: 'fixed',
+        top: '68px',        // topbar height (60px) + 8px gap
+        right: '16px',
+        width: '320px',
+        zIndex: 9999,       // above topbar z-20
+        background: 'var(--bg-secondary, #132333)',
+        border: '1px solid rgba(255,255,255,0.1)',
+        borderRadius: '16px',
+        boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+        overflow: 'hidden',
+        animation: 'slideDown 0.18s ease',
       }}
     >
       {/* Header */}
-      <div
-        className="px-4 py-3 flex items-center justify-between"
-        style={{
-          borderBottom: "1px solid var(--border-color, rgba(255,255,255,0.07))",
-        }}
-      >
+      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
         <div className="flex items-center gap-2">
-          <div
-            className="w-8 h-8 rounded-lg flex items-center justify-center"
-            style={{ background: `${color}18`, color }}
-          >
-            <Bell size={16} />
-          </div>
-          <span className="text-sm font-bold" style={{ color: "var(--text-primary, white)" }}>
-            Notifications
+          <Bell size={14} style={{ color }} />
+          <span className="text-sm font-bold" style={{ color: 'var(--text-primary, white)' }}>Notifications</span>
+          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: `${color}20`, color }}>
+            {MOCK_NOTIFS.filter(n => n.unread).length}
           </span>
         </div>
-        {unreadCount > 0 && (
-          <span
-            className="text-xs font-bold px-2 py-1 rounded-full"
-            style={{
-              background: `${color}24`,
-              color: color,
-            }}
-          >
-            {unreadCount} new
-          </span>
-        )}
+        <button onClick={onClose} className="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-white/5 transition-colors" style={{ color: '#8ca5bc' }}>
+          <X size={13} />
+        </button>
       </div>
 
-      {/* Notifications List */}
-      <div className="max-h-[400px] overflow-y-auto">
-        {RECENT_NOTIFICATIONS.length > 0 ? (
-          RECENT_NOTIFICATIONS.map((notification) => {
-            const Icon = notification.icon;
-            return (
-              <button
-                key={notification.id}
-                className="w-full text-left flex items-start gap-3 px-4 py-3 transition-colors hover:bg-white/5 active:bg-white/10"
-                style={{
-                  borderBottom: "1px solid var(--border-color, rgba(255,255,255,0.07))",
-                }}
-              >
-                <div
-                  className="relative w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                  style={{
-                    background: `${color}14`,
-                    color: color,
-                  }}
-                >
-                  <Icon size={14} />
-                  {notification.unread && (
-                    <span
-                      className="absolute -right-1 -top-1 w-2 h-2 rounded-full"
-                      style={{ background: color }}
-                    />
-                  )}
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-xs font-bold" style={{ color: "var(--text-primary, white)" }}>
-                    {notification.title}
-                  </h3>
-                  <p
-                    className="text-xs leading-relaxed mt-0.5 line-clamp-2"
-                    style={{ color: "var(--text-secondary, #8ca5bc)" }}
-                  >
-                    {notification.detail}
-                  </p>
-                  <span
-                    className="text-[10px] inline-block mt-1"
-                    style={{ color: "var(--text-secondary, #8ca5bc)" }}
-                  >
-                    {notification.time}
-                  </span>
-                </div>
-              </button>
-            );
-          })
-        ) : (
-          <div className="px-4 py-8 text-center">
-            <p
-              className="text-xs"
-              style={{ color: "var(--text-secondary, #8ca5bc)" }}
-            >
-              No notifications yet
-            </p>
-          </div>
-        )}
+      {/* Items */}
+      <div>
+        {MOCK_NOTIFS.map(n => {
+          const Icon = n.icon;
+          return (
+            <div key={n.id} className="flex items-start gap-3 px-4 py-3 hover:bg-white/[0.03] transition-colors cursor-pointer"
+              style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', background: n.unread ? `${color}06` : 'transparent' }}>
+              <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5"
+                style={{ background: `${color}18`, color }}>
+                <Icon size={14} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs leading-relaxed" style={{ color: n.unread ? 'var(--text-primary, white)' : 'var(--text-secondary, #8ca5bc)' }}>
+                  {n.text}
+                </p>
+                <span className="text-[10px]" style={{ color: '#8ca5bc' }}>{n.time}</span>
+              </div>
+              {n.unread && <div className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0" style={{ background: color }} />}
+            </div>
+          );
+        })}
       </div>
 
-      {/* Footer - View All Button */}
-      <button
-        onClick={() => {
-          onNavigateToAll();
-          onClose();
-        }}
-        className="w-full px-4 py-3 flex items-center justify-between transition-colors hover:bg-white/5 active:bg-white/10"
-        style={{
-          borderTop: "1px solid var(--border-color, rgba(255,255,255,0.07))",
-          color: color,
-        }}
-      >
-        <span className="text-xs font-bold uppercase tracking-wider">View All</span>
-        <ChevronRight size={14} />
+      {/* Footer */}
+      <button onClick={onNavigateToAll} className="w-full py-3 text-xs font-semibold transition-colors hover:bg-white/[0.03]"
+        style={{ color, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        View all notifications →
       </button>
     </div>
   );

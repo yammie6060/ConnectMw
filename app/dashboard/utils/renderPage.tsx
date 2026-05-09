@@ -98,6 +98,19 @@ export function renderPage(
       component = <ReviewsPage color={color} />;
       break;
 
+    case "browse":
+      component = <RentalsPage color={color} />;   
+      break;
+    case "saved":
+      component = <RentalsPage color={color} />;   
+      break;
+    case "upload":
+      component = <AddPartPage color={color} />;   
+      break;
+    case "add-service":
+      component = <PortfolioPage color={color} />;  
+      break;
+
     // Shared
     case "notifications":
       component = <NotificationsPage color={color} key="notifications-page" />;
@@ -114,7 +127,7 @@ export function renderPage(
       component = <ProfilePage color={color} user={user} meta={meta} />;
       break;
     case "billing":     
-      component = <BillingPage color={color} />;
+      component = <BillingPage color={color} user={user} />;
       break;
     case "privacy":     
       component = <PrivacyPage color={color} />;

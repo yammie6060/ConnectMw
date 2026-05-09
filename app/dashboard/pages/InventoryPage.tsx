@@ -11,7 +11,7 @@ const INVENTORY_ITEMS = [
 ];
 
 const LANDLORD_LISTINGS = [
-  { id: 1, title: "3-Bed House, Kabulonga", type: "House", rent: "K180,000/mo", status: "Available", enquiries: 2, views: 45 },
+  { id: 1, title: "3-Bed House, Area 47", type: "House", rent: "K180,000/mo", status: "Available", enquiries: 2, views: 45 },
   { id: 2, title: "Studio Apt, Area 3",     type: "Apartment", rent: "K65,000/mo", status: "Occupied", enquiries: 0, views: 12 },
   { id: 3, title: "Student Hostel, Chichiri", type: "Hostel", rent: "K30,000/mo", status: "Available", enquiries: 1, views: 38 },
   { id: 4, title: "2-Bed Flat, Limbe",    type: "Flat",  rent: "K120,000/mo", status: "Available", enquiries: 3, views: 61 },

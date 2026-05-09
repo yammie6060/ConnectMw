@@ -27,7 +27,7 @@ export const ROLE_META: Record<string, RoleMeta> = {
       { label: "Revenue",         value: "K180K", icon: Package,       delta: "this month" },
     ],
     recentItems: [
-      { title: "3-Bed House, Kabulonga",         sub: "2 new enquiries",        badge: "Available", badgeColor: "#10b981" },
+      { title: "3-Bed House, Area 47",         sub: "2 new enquiries",        badge: "Available", badgeColor: "#10b981" },
       { title: "Studio Apt, Area 3",             sub: "Occupied · Lease ends Jun", badge: "Occupied", badgeColor: "#8ca5bc" },
       { title: "Student Hostel Room, Chichiri",  sub: "1 new enquiry",          badge: "Available", badgeColor: "#10b981" },
     ],

@@ -6,7 +6,7 @@ const ENQUIRIES = [
   { id: 1, from: "Mphatso Banda",   item: "Toyota Hiace Side Mirror",        msg: "Is this still available? I'm in Blantyre.", time: "2h ago",  status: "New",      avatar: "MB" },
   { id: 2, from: "Grace Phiri",     item: "Nissan Wingroad Brake Pads",       msg: "Can you deliver to Zomba? What's the price?", time: "5h ago",  status: "Replied",  avatar: "GP" },
   { id: 3, from: "James Chirwa",    item: "Toyota Vitz Headlight Assembly",   msg: "I'll take 2 units if price is negotiable.",   time: "1d ago",  status: "New",      avatar: "JC" },
-  { id: 4, from: "Thandiwe Mwale",  item: "3-Bed House, Kabulonga",           msg: "When can I schedule a viewing?",              time: "3h ago",  status: "New",      avatar: "TM" },
+  { id: 4, from: "Thandiwe Mwale",  item: "3-Bed House, Area 47",           msg: "When can I schedule a viewing?",              time: "3h ago",  status: "New",      avatar: "TM" },
   { id: 5, from: "Charles Nkhoma",  item: "2-Bed Flat, Limbe",                msg: "Is utilities included in the rent?",          time: "6h ago",  status: "Replied",  avatar: "CN" },
 ];
 
