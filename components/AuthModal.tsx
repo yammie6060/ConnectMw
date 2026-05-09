@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, Sparkle, User2, Wrench } from "lucide-react";
+import { Building2, Sparkle, User2, Wrench, Eye, EyeOff } from "lucide-react";
+import { registerUser, loginUser } from "@/lib/auth";
 
 interface SignupFormData {
   firstName: string;
@@ -11,7 +12,6 @@ interface SignupFormData {
   phone: string;
   role: string;
   password: string;
-  // Role-specific fields
   businessName?: string;
   serviceMode?: string;
   companyName?: string;
@@ -21,7 +21,7 @@ interface SignupFormData {
 }
 
 interface AuthCardProps {
-  defaultTab: "signin" | "signup" | "forgotPassword";
+  defaultTab: View;
 }
 
 const ROLE_CONFIGS = {
@@ -67,37 +67,92 @@ type RoleField = {
   colSpan?: 1 | 2;
 };
 
-type View = "signin" | "signup" | "forgotPassword" | "resetPassword";
+type View = "signin" | "signup" | "forgotPassword";
+
+function PasswordInput({
+  placeholder,
+  value,
+  onChange,
+  required,
+}: {
+  placeholder: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  required?: boolean;
+}) {
+  const [show, setShow] = useState(false);
+  return (
+    <div className="relative">
+      <input
+        type={show ? "text" : "password"}
+        className="modal-input pr-10"
+        placeholder={placeholder}
+        value={value}
+        onChange={onChange}
+        required={required}
+      />
+      <button
+        type="button"
+        onClick={() => setShow((s) => !s)}
+        tabIndex={-1}
+        aria-label={show ? "Hide password" : "Show password"}
+        style={{
+          position: "absolute",
+          right: "0.65rem",
+          top: "50%",
+          transform: "translateY(-50%)",
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          color: "#8ca5bc",
+          padding: "2px",
+          display: "flex",
+          alignItems: "center",
+        }}
+      >
+        {show ? <EyeOff size={15} /> : <Eye size={15} />}
+      </button>
+    </div>
+  );
+}
 
 export default function AuthCard({ defaultTab }: AuthCardProps) {
   const router = useRouter();
   const [currentView, setCurrentView] = useState<View>(defaultTab);
   const [signupData, setSignupData] = useState<SignupFormData>({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    role: "",
-    password: "",
+    firstName: "", lastName: "", email: "", phone: "", role: "", password: "",
   });
+  const [signinEmail, setSigninEmail] = useState("");
+  const [signinPassword, setSigninPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  
-  // Forgot password state
+
   const [forgotEmail, setForgotEmail] = useState("");
-  const [resetCode, setResetCode] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [resetStep, setResetStep] = useState<"request" | "verify">("request");
+  const [forgotSent, setForgotSent] = useState(false);
+
+  useEffect(() => {
+    const isLight = localStorage.getItem("connectmw_theme") === "light";
+    const root = document.documentElement;
+
+    root.style.setProperty("--bg-primary", isLight ? "#f3f4f6" : "#0d1f2d");
+    root.style.setProperty("--bg-secondary", isLight ? "#ffffff" : "#132333");
+    root.style.setProperty("--bg-elevated", isLight ? "#f8fafc" : "#1a2e42");
+    root.style.setProperty("--bg-muted", isLight ? "#eef2f7" : "rgba(255,255,255,0.05)");
+    root.style.setProperty("--text-primary", isLight ? "#111827" : "#ffffff");
+    root.style.setProperty("--text-secondary", isLight ? "#6b7280" : "#8ca5bc");
+    root.style.setProperty("--text-soft", isLight ? "#334155" : "#cde0f0");
+    root.style.setProperty("--accent-primary", isLight ? "#b45309" : "#f5ab20");
+    root.style.setProperty("--border-color", isLight ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.1)");
+    root.style.setProperty("--shadow-color", isLight ? "rgba(15,23,42,0.14)" : "rgba(0,0,0,0.5)");
+    document.body.style.background = isLight ? "#f3f4f6" : "#0d1f2d";
+    document.body.style.color = isLight ? "#111827" : "#ffffff";
+  }, []);
 
   const switchView = (view: View) => {
     setCurrentView(view);
     setError("");
     setSuccess("");
-    // Update URL without page reload
-    const url = view === "signin" ? "/signin" : view === "signup" ? "/signup" : "/forgot-password";
-    router.replace(url);
   };
 
   const handleSignupChange = (field: keyof SignupFormData, value: string) => {
@@ -107,596 +162,452 @@ export default function AuthCard({ defaultTab }: AuthCardProps) {
 
   const handleSignupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
     setError("");
 
-    const selectedRole = signupData.role as UserRole;
-    const roleConfig = ROLE_CONFIGS[selectedRole];
+    if (!signupData.role) { setError("Please select your role."); return; }
 
-    if (roleConfig && roleConfig.fields) {
+    const roleConfig = ROLE_CONFIGS[signupData.role as UserRole];
+    if (roleConfig?.fields) {
       for (const field of roleConfig.fields) {
         if (field.required && !signupData[field.name as keyof SignupFormData]) {
           setError(`Please fill in ${field.label}`);
-          setIsSubmitting(false);
           return;
         }
       }
     }
 
-    // Submit logic...
-    console.log("Submitting:", signupData);
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    if (signupData.password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    await new Promise((r) => setTimeout(r, 700));
+
+    const result = registerUser({
+      firstName: signupData.firstName,
+      lastName: signupData.lastName,
+      email: signupData.email,
+      phone: signupData.phone,
+      role: signupData.role,
+      password: signupData.password,
+      businessName: signupData.businessName,
+      serviceMode: signupData.serviceMode,
+      companyName: signupData.companyName,
+      idNumber: signupData.idNumber,
+      garageName: signupData.garageName,
+      businessType: signupData.businessType,
+    });
+
     setIsSubmitting(false);
+    if (!result.ok) { setError(result.error!); return; }
+    setSuccess("Account created! Redirecting to your dashboard…");
+    setTimeout(() => router.push("/dashboard"), 1000);
   };
 
   const handleSigninSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
     setError("");
-    
-    // Sign in logic...
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    setIsSubmitting(true);
+    await new Promise((r) => setTimeout(r, 600));
+    const result = loginUser(signinEmail, signinPassword);
     setIsSubmitting(false);
+    if (!result.ok) { setError(result.error!); return; }
+    setSuccess("Welcome back! Redirecting…");
+    setTimeout(() => router.push("/dashboard"), 800);
   };
 
-  const handleForgotPasswordSubmit = async (e: React.FormEvent) => {
+  const handleForgotSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setError("");
-    setSuccess("");
-
-    try {
-      // API call to request password reset
-      const response = await fetch("/api/auth/forgot-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: forgotEmail }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) throw new Error(data.message || "Request failed");
-
-      setSuccess("Password reset code sent to your email!");
-      setResetStep("verify");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleResetPasswordSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setError("");
-    setSuccess("");
-
-    if (newPassword !== confirmPassword) {
-      setError("Passwords do not match");
-      setIsSubmitting(false);
-      return;
-    }
-
-    if (newPassword.length < 8) {
-      setError("Password must be at least 8 characters");
-      setIsSubmitting(false);
-      return;
-    }
-
-    try {
-      const response = await fetch("/api/auth/reset-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: forgotEmail,
-          code: resetCode,
-          newPassword,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) throw new Error(data.message || "Reset failed");
-
-      setSuccess("Password reset successful! Please sign in.");
-      setTimeout(() => {
-        switchView("signin");
-        setForgotEmail("");
-        setResetCode("");
-        setNewPassword("");
-        setConfirmPassword("");
-        setResetStep("request");
-      }, 2000);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
-    } finally {
-      setIsSubmitting(false);
-    }
+    await new Promise((r) => setTimeout(r, 800));
+    setIsSubmitting(false);
+    setForgotSent(true);
   };
 
   const getRoleFields = (role: string): RoleField[] => {
     if (!role) return [];
-    const config = ROLE_CONFIGS[role as UserRole];
-    return config?.fields || [];
+    return ROLE_CONFIGS[role as UserRole]?.fields || [];
   };
 
   return (
     <>
       <style jsx global>{`
         @keyframes scaleIn {
-          from { opacity: 0; transform: scale(0.93); }
-          to { opacity: 1; transform: scale(1); }
+          from { opacity: 0; transform: scale(0.95); }
+          to   { opacity: 1; transform: scale(1); }
         }
         @keyframes slideIn {
-          from {
-            opacity: 0;
-            transform: translateX(-20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
+          from { opacity: 0; transform: translateX(-16px); }
+          to   { opacity: 1; transform: translateX(0); }
         }
         .modal-input {
           width: 100%;
-          background: rgba(255,255,255,0.05);
-          border: 1.5px solid rgba(255,255,255,0.1);
-          border-radius: 8px;
-          color: white;
-          padding: 0.55rem 0.8rem;
+          background: var(--bg-elevated, rgba(255,255,255,0.05));
+          border: 1.5px solid var(--border-color, rgba(255,255,255,0.1));
+          border-radius: 10px;
+          color: var(--text-primary, white);
+          padding: 0.7rem 0.95rem;
           font-family: "DM Sans", sans-serif;
-          font-size: 0.84rem;
+          font-size: 0.88rem;
           outline: none;
-          transition: all 0.2s;
+          transition: border-color 0.2s, background 0.2s;
+          box-sizing: border-box;
         }
-        .modal-input:focus { border-color: #f5ab20; background: rgba(255,255,255,0.08); }
-        .modal-input::placeholder { color: #8ca5bc; }
-        .modal-input option { background: #132333; }
-        .error-message {
-          color: #ef4444;
-          font-size: 0.75rem;
-          margin-top: 0.5rem;
-          text-align: center;
-        }
-        .success-message {
-          color: #10b981;
-          font-size: 0.75rem;
-          margin-top: 0.5rem;
-          text-align: center;
-        }
-        .form-grid {
-          display: grid;
-          grid-template-columns: repeat(2, 1fr);
-          gap: 0.75rem;
-        }
-        .form-grid-full {
-          grid-column: span 2;
-        }
-        .role-badge {
-          background: rgba(245, 195, 32, 0.1);
-          border: 1px solid rgba(245, 195, 32, 0.2);
-          border-radius: 8px;
-          padding: 0.45rem 0.65rem;
-          margin-bottom: 0.75rem;
-          font-size: 0.76rem;
-          color: #f5ab20;
-          display: inline-flex;
-          align-items: center;
-          gap: 0.5rem;
-        }
-        .dynamic-fields {
-          animation: slideIn 0.25s ease-out;
-        }
-        .back-link {
-          background: none;
-          border: none;
-          color: #8ca5bc;
-          cursor: pointer;
+        .modal-input:focus { border-color: var(--accent-primary, #f5ab20); background: color-mix(in srgb, var(--accent-primary, #f5ab20) 5%, var(--bg-secondary, #132333)); }
+        .modal-input::placeholder { color: var(--text-secondary, #8ca5bc); }
+        .modal-input option { background: var(--bg-secondary, #132333); color: var(--text-primary, white); }
+
+        /* ── Styled error / success banners ── */
+        .alert-msg {
+          border-radius: 10px;
+          padding: 0.65rem 1rem;
           font-size: 0.82rem;
+          font-weight: 600;
+          text-align: center;
+          margin-bottom: 0.85rem;
+        }
+        .alert-error {
+          background: rgba(239, 68, 68, 0.15);
+          border: 1px solid rgba(239, 68, 68, 0.35);
+          color: #f87171;
+        }
+        .alert-success {
+          background: rgba(16, 185, 129, 0.15);
+          border: 1px solid rgba(16, 185, 129, 0.35);
+          color: #34d399;
+        }
+
+        .form-grid   { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.85rem; }
+        .form-grid-full { grid-column: span 2; }
+        .role-badge {
+          background: rgba(245,195,32,0.08);
+          border: 1px solid rgba(245,195,32,0.2);
+          border-radius: 8px;
+          padding: 0.5rem 0.75rem;
+          margin-bottom: 0.85rem;
+          font-size: 0.76rem;
+          color: var(--accent-primary, #f5ab20);
           display: inline-flex;
           align-items: center;
           gap: 0.5rem;
-          transition: color 0.2s;
         }
-        .back-link:hover {
-          color: #f5ab20;
-        }
+        .dynamic-fields { animation: slideIn 0.22s ease-out; }
+
         @media (max-width: 640px) {
-          .form-grid {
-            grid-template-columns: 1fr;
-            gap: 0;
-          }
-          .form-grid-full {
-            grid-column: auto;
-          }
+          .form-grid { grid-template-columns: 1fr; gap: 0.75rem; }
+          .form-grid-full { grid-column: auto; }
         }
       `}</style>
 
       <div
         className="pointer-events-none fixed inset-0 -z-10"
-        style={{
-          background: "radial-gradient(ellipse at center, rgba(27,79,106,.4) 0%, transparent 65%)",
-        }}
+        style={{ background: "radial-gradient(ellipse at center, color-mix(in srgb, var(--accent-primary, #f5ab20) 18%, transparent) 0%, transparent 65%)" }}
       />
 
-      <div
-        className="relative w-full max-w-[600px] max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-[14px] p-5 sm:p-6"
-        style={{
-          background: "#132333",
-          border: "1px solid rgba(245,166,35,0.2)",
-          animation: "scaleIn 0.25s ease both",
-        }}
-      >
+      <div className="w-full flex justify-center items-center min-h-screen px-4 py-8">
         <div
-          className="font-black text-[1.15rem] mb-1 text-white"
-          style={{ fontFamily: " sans-serif" }}
+          className="relative w-full max-w-[560px] rounded-2xl overflow-y-auto"
+          style={{
+            background: "var(--bg-secondary, #132333)",
+            border: "1px solid var(--border-color, rgba(245,166,35,0.18))",
+            boxShadow: "0 24px 60px var(--shadow-color, rgba(0,0,0,0.5))",
+            animation: "scaleIn 0.25s ease both",
+            maxHeight: "calc(100dvh - 2rem)",
+          }}
         >
-          Connect<span style={{ color: "#f5ab20" }}>MW</span>
-        </div>
-        <p className="text-[0.78rem] text-[#8ca5bc] mb-4">
-          Your all-in-one local services platform
-        </p>
-
-        {/* Show tabs only for signin/signup, not for forgot password */}
-        {(currentView === "signin" || currentView === "signup") && (
-          <div className="flex mb-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-            {(["signin", "signup"] as const).map((view) => (
-              <button
-                key={view}
-                onClick={() => switchView(view)}
-                className="flex-1 py-2 text-center font-bold text-sm bg-transparent border-none cursor-pointer transition-all duration-200"
-                style={{
-                  fontFamily: " sans-serif",
-                  color: currentView === view ? "#f5ab20" : "#8ca5bc",
-                  borderBottom: currentView === view ? "2px solid #f5ab20" : "2px solid transparent",
-                }}
-              >
-                {view === "signin" ? "Sign In" : "Sign Up"}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* SIGN IN VIEW */}
-        {currentView === "signin" && (
-          <form onSubmit={handleSigninSubmit}>
-            <FormGroup label="Email or Phone Number">
-              <ModalInput type="text" placeholder="you@example.com or 0888..." />
-            </FormGroup>
-            <FormGroup label="Password">
-              <ModalInput type="password" placeholder="Enter your password" />
-            </FormGroup>
-            <div className="text-right mb-5">
-              <button
-                type="button"
-                onClick={() => switchView("forgotPassword")}
-                className="text-xs no-underline hover:underline bg-transparent border-none cursor-pointer"
-                style={{ color: "#f5ab20" }}
-              >
-                Forgot password?
-              </button>
+          <div className="p-7 sm:p-9">
+            {/* Brand */}
+            <div className="font-black text-[1.3rem] sm:text-[1.5rem] mb-0.5 tracking-tight" style={{ color: "var(--text-primary, white)" }}>
+              Connect<span style={{ color: "var(--accent-primary, #f5ab20)" }}>MW</span>
             </div>
-            <SubmitButton disabled={isSubmitting}>
-              {isSubmitting ? "Signing In..." : "Sign In →"}
-            </SubmitButton>
-            <p className="text-center mt-3 text-[0.8rem] text-[#8ca5bc]">
-              Don&apos;t have an account?{" "}
-              <button
-                type="button"
-                onClick={() => switchView("signup")}
-                className="bg-transparent border-none cursor-pointer text-[0.82rem] hover:underline"
-                style={{ color: "#f5ab20" }}
-              >
-                Sign up free
-              </button>
+            <p className="text-[0.8rem] sm:text-[0.85rem] mb-5 sm:mb-6 leading-relaxed" style={{ color: "var(--text-secondary, #8ca5bc)" }}>
+              Your all-in-one local services platform
             </p>
-          </form>
-        )}
 
-        {/* SIGN UP VIEW */}
-        {currentView === "signup" && (
-          <form onSubmit={handleSignupSubmit}>
-            <div className="form-grid">
-              <FormGroup label="First Name">
-                <ModalInput
-                  type="text"
-                  placeholder="Tawonga"
-                  value={signupData.firstName}
-                  onChange={(e) => handleSignupChange("firstName", e.target.value)}
-                  required
-                />
-              </FormGroup>
-              <FormGroup label="Last Name">
-                <ModalInput
-                  type="text"
-                  placeholder="Mbewe"
-                  value={signupData.lastName}
-                  onChange={(e) => handleSignupChange("lastName", e.target.value)}
-                  required
-                />
-              </FormGroup>
-            </div>
-
-            <div className="form-grid">
-              <FormGroup label="Email Address">
-                <ModalInput
-                  type="email"
-                  placeholder="you@example.com"
-                  value={signupData.email}
-                  onChange={(e) => handleSignupChange("email", e.target.value)}
-                  required
-                />
-              </FormGroup>
-              <FormGroup label="Phone Number">
-                <ModalInput
-                  type="tel"
-                  placeholder="+265 888 000 000"
-                  value={signupData.phone}
-                  onChange={(e) => handleSignupChange("phone", e.target.value)}
-                  required
-                />
-              </FormGroup>
-            </div>
-
-            <div className="form-grid">
-              <FormGroup label="I want to join as">
-                <ModalSelect
-                  value={signupData.role}
-                  onChange={(e) => handleSignupChange("role", e.target.value)}
-                  options={[
-                    { value: "", label: "Select your role..." },
-                    { value: "customer", label: "Customer (looking for services)" },
-                    { value: "landlord", label: " Landlord / Property Agent" },
-                    { value: "beautyProvider", label: " Beauty Service Provider" },
-                    { value: "spareSeller", label: "Auto Spare Parts Seller" },
-                  ]}
-                />
-              </FormGroup>
-              
-              <FormGroup label="Password">
-                <ModalInput
-                  type="password"
-                  placeholder="Create a strong password"
-                  value={signupData.password}
-                  onChange={(e) => handleSignupChange("password", e.target.value)}
-                  required
-                />
-              </FormGroup>
-            </div>
-
-            {signupData.role && getRoleFields(signupData.role).length > 0 && (
-              <div className="dynamic-fields">
-                <div className="role-badge">
-                  {(() => {
-                    const IconComponent = ROLE_CONFIGS[signupData.role as UserRole]?.icon;
-                    return IconComponent ? <IconComponent size={18} strokeWidth={2} /> : null;
-                  })()}
-                  <span>Additional information for {ROLE_CONFIGS[signupData.role as UserRole]?.label}</span>
-                </div>
-                <div className="form-grid">
-                  {getRoleFields(signupData.role).map((field) => (
-                    <div key={field.name} className={field.colSpan === 2 ? "form-grid-full" : ""}>
-                      <FormGroup label={field.label}>
-                        {field.type === "select" ? (
-                          <ModalSelect
-                            value={signupData[field.name as keyof SignupFormData] as string || ""}
-                            onChange={(e) => handleSignupChange(field.name as keyof SignupFormData, e.target.value)}
-                            options={[
-                              { value: "", label: field.placeholder || `Select ${field.label}...` },
-                              ...(field.options?.map(opt => ({ value: opt.toLowerCase().replace(/\s+/g, "_"), label: opt })) || [])
-                            ]}
-                            required={field.required}
-                          />
-                        ) : (
-                          <ModalInput
-                            type={field.type}
-                            placeholder={field.placeholder}
-                            value={signupData[field.name as keyof SignupFormData] as string || ""}
-                            onChange={(e) => handleSignupChange(field.name as keyof SignupFormData, e.target.value)}
-                            required={field.required}
-                          />
-                        )}
-                      </FormGroup>
-                    </div>
-                  ))}
-                </div>
+            {/* Tabs */}
+            {(currentView === "signin" || currentView === "signup") && (
+              <div className="flex mb-6" style={{ borderBottom: "1px solid var(--border-color, rgba(255,255,255,0.08))" }}>
+                {(["signin", "signup"] as const).map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => switchView(v)}
+                    className="flex-1 pb-3 text-center font-bold text-sm bg-transparent border-none cursor-pointer transition-all duration-200"
+                    style={{
+                      color: currentView === v ? "var(--accent-primary, #f5ab20)" : "var(--text-secondary, #8ca5bc)",
+                      borderBottom: currentView === v ? "2px solid var(--accent-primary, #f5ab20)" : "2px solid transparent",
+                      marginBottom: "-1px",
+                    }}
+                  >
+                    {v === "signin" ? "Sign In" : "Sign Up"}
+                  </button>
+                ))}
               </div>
             )}
 
-            {error && <div className="error-message">{error}</div>}
+            {/* ── SIGN IN ── */}
+            {currentView === "signin" && (
+              <form onSubmit={handleSigninSubmit} noValidate>
+                {error   && <div className="alert-msg alert-error">{error}</div>}
+                {success && <div className="alert-msg alert-success">{success}</div>}
 
-            <SubmitButton disabled={isSubmitting}>
-              {isSubmitting ? "Creating Account..." : "Create Account →"}
-            </SubmitButton>
-
-            <p className="text-center mt-3 text-[0.8rem] text-[#8ca5bc]">
-              Already have an account?{" "}
-              <button
-                type="button"
-                onClick={() => switchView("signin")}
-                className="bg-transparent border-none cursor-pointer text-[0.82rem] hover:underline"
-                style={{ color: "#f5ab20" }}
-              >
-                Sign in
-              </button>
-            </p>
-          </form>
-        )}
-
-        {/* FORGOT PASSWORD VIEW */}
-        {currentView === "forgotPassword" && (
-          <div>
-            <button
-              type="button"
-              onClick={() => switchView("signin")}
-              className="back-link mb-4"
-            >
-              ← Back to Sign In
-            </button>
-
-            {resetStep === "request" ? (
-              <form onSubmit={handleForgotPasswordSubmit}>
-                <div className="text-center mb-5">
-                  <div className="text-4xl mb-3">
-                  </div>
-                  <h3 className="text-white font-semibold mb-2">Forgot Password?</h3>
-                  <p className="text-[#8ca5bc] text-sm">
-                    Enter your email address and we'll send you a code to reset your password.
-                  </p>
-                </div>
-
-                <FormGroup label="Email Address">
-                  <ModalInput
-                    type="email"
-                    placeholder="you@example.com"
-                    value={forgotEmail}
-                    onChange={(e) => setForgotEmail(e.target.value)}
+                <FormGroup label="Email or Phone Number">
+                  <input
+                    type="text"
+                    className="modal-input"
+                    placeholder="you@example.com or 0888 000 000"
+                    value={signinEmail}
+                    onChange={(e) => { setSigninEmail(e.target.value); setError(""); }}
                     required
                   />
                 </FormGroup>
 
-                {error && <div className="error-message">{error}</div>}
-                {success && <div className="success-message">{success}</div>}
+                <FormGroup label="Password">
+                  <PasswordInput
+                    placeholder="Enter your password"
+                    value={signinPassword}
+                    onChange={(e) => { setSigninPassword(e.target.value); setError(""); }}
+                    required
+                  />
+                </FormGroup>
+
+                <div className="flex justify-end mb-5 -mt-1">
+                  <button
+                    type="button"
+                    onClick={() => switchView("forgotPassword")}
+                    className="text-xs bg-transparent border-none cursor-pointer hover:underline"
+                    style={{ color: "var(--accent-primary, #f5ab20)" }}
+                  >
+                    Forgot password?
+                  </button>
+                </div>
 
                 <SubmitButton disabled={isSubmitting}>
-                  {isSubmitting ? "Sending Code..." : "Send Reset Code →"}
+                  {isSubmitting ? "Signing In…" : "Sign In →"}
                 </SubmitButton>
 
-                <p className="text-center mt-3 text-[0.8rem] text-[#8ca5bc]">
-                  Remember your password?{" "}
+                <p className="text-center mt-4 text-[0.82rem]" style={{ color: "var(--text-secondary, #8ca5bc)" }}>
+                  Don&apos;t have an account?{" "}
+                  <button
+                    type="button"
+                    onClick={() => switchView("signup")}
+                    className="bg-transparent border-none cursor-pointer font-semibold hover:underline"
+                    style={{ color: "var(--accent-primary, #f5ab20)" }}
+                  >
+                    Sign up free
+                  </button>
+                </p>
+              </form>
+            )}
+
+            {/* ── SIGN UP ── */}
+            {currentView === "signup" && (
+              <form onSubmit={handleSignupSubmit} noValidate>
+                {error   && <div className="alert-msg alert-error">{error}</div>}
+                {success && <div className="alert-msg alert-success">{success}</div>}
+
+                <div className="form-grid">
+                  <FormGroup label="First Name">
+                    <input type="text" className="modal-input" placeholder="Tawonga"
+                      value={signupData.firstName}
+                      onChange={(e) => handleSignupChange("firstName", e.target.value)} required />
+                  </FormGroup>
+                  <FormGroup label="Last Name">
+                    <input type="text" className="modal-input" placeholder="Mbewe"
+                      value={signupData.lastName}
+                      onChange={(e) => handleSignupChange("lastName", e.target.value)} required />
+                  </FormGroup>
+                </div>
+
+                <div className="form-grid">
+                  <FormGroup label="Email Address">
+                    <input type="email" className="modal-input" placeholder="you@example.com"
+                      value={signupData.email}
+                      onChange={(e) => handleSignupChange("email", e.target.value)} required />
+                  </FormGroup>
+                  <FormGroup label="Phone Number">
+                    <input type="tel" className="modal-input" placeholder="+265 888 000 000"
+                      value={signupData.phone}
+                      onChange={(e) => handleSignupChange("phone", e.target.value)} required />
+                  </FormGroup>
+                </div>
+
+                <div className="form-grid">
+                  <FormGroup label="I want to join as">
+                    <select
+                      className="modal-input"
+                      value={signupData.role}
+                      onChange={(e) => handleSignupChange("role", e.target.value)}
+                      required
+                    >
+                      <option value="">Select your role…</option>
+                      <option value="customer">Customer (looking for services)</option>
+                      <option value="landlord">🏠 Landlord / Property Agent</option>
+                      <option value="beautyProvider">✨ Beauty Service Provider</option>
+                      <option value="spareSeller">🔧 Auto Spare Parts Seller</option>
+                    </select>
+                  </FormGroup>
+
+                  <FormGroup label="Password">
+                    <PasswordInput
+                      placeholder="Create a strong password"
+                      value={signupData.password}
+                      onChange={(e) => handleSignupChange("password", e.target.value)}
+                      required
+                    />
+                  </FormGroup>
+                </div>
+
+                {signupData.role && getRoleFields(signupData.role).length > 0 && (
+                  <div className="dynamic-fields mt-1">
+                    <div className="role-badge">
+                      {(() => {
+                        const Icon = ROLE_CONFIGS[signupData.role as UserRole]?.icon;
+                        return Icon ? <Icon size={15} strokeWidth={2} /> : null;
+                      })()}
+                      <span>
+                        Additional info for{" "}
+                        <strong>{ROLE_CONFIGS[signupData.role as UserRole]?.label}</strong>
+                      </span>
+                    </div>
+                    <div className="form-grid">
+                      {getRoleFields(signupData.role).map((field) => (
+                        <div key={field.name} className={field.colSpan === 2 ? "form-grid-full" : ""}>
+                          <FormGroup label={field.label}>
+                            {field.type === "select" ? (
+                              <select
+                                className="modal-input"
+                                value={signupData[field.name as keyof SignupFormData] as string || ""}
+                                onChange={(e) => handleSignupChange(field.name as keyof SignupFormData, e.target.value)}
+                                required={field.required}
+                              >
+                                <option value="">Select {field.label}…</option>
+                                {field.options?.map((opt) => (
+                                  <option key={opt} value={opt.toLowerCase().replace(/\s+/g, "_")}>
+                                    {opt}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : (
+                              <input
+                                type="text"
+                                className="modal-input"
+                                placeholder={field.placeholder}
+                                value={signupData[field.name as keyof SignupFormData] as string || ""}
+                                onChange={(e) => handleSignupChange(field.name as keyof SignupFormData, e.target.value)}
+                                required={field.required}
+                              />
+                            )}
+                          </FormGroup>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <SubmitButton disabled={isSubmitting}>
+                  {isSubmitting ? "Creating Account…" : "Create Account →"}
+                </SubmitButton>
+
+                <p className="text-center mt-4 text-[0.82rem]" style={{ color: "var(--text-secondary, #8ca5bc)" }}>
+                  Already have an account?{" "}
                   <button
                     type="button"
                     onClick={() => switchView("signin")}
-                    className="bg-transparent border-none cursor-pointer text-[0.82rem] hover:underline"
-                    style={{ color: "#f5ab20" }}
+                    className="bg-transparent border-none cursor-pointer font-semibold hover:underline"
+                    style={{ color: "var(--accent-primary, #f5ab20)" }}
                   >
                     Sign in
                   </button>
                 </p>
               </form>
-            ) : (
-              <form onSubmit={handleResetPasswordSubmit}>
-                <div className="text-center mb-5">
-                  <h3 className="text-white font-semibold mb-2">Check Your Email</h3>
-                  <p className="text-[#8ca5bc] text-sm">
-                    We sent a 6-digit code to {forgotEmail}
-                  </p>
-                </div>
+            )}
 
-                <FormGroup label="Reset Code">
-                  <ModalInput
-                    type="text"
-                    placeholder="Enter 6-digit code"
-                    value={resetCode}
-                    onChange={(e) => setResetCode(e.target.value)}
-                    required
-                  />
-                </FormGroup>
+            {/* ── FORGOT PASSWORD ── */}
+            {currentView === "forgotPassword" && (
+              <div>
+                <button
+                  type="button"
+                  onClick={() => switchView("signin")}
+                  className="flex items-center gap-1.5 text-[0.82rem] bg-transparent border-none cursor-pointer transition-colors mb-5"
+                  style={{ color: "var(--text-secondary, #8ca5bc)" }}
+                >
+                  ← Back to Sign In
+                </button>
 
-                <FormGroup label="New Password">
-                  <ModalInput
-                    type="password"
-                    placeholder="Create new password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    required
-                  />
-                </FormGroup>
+                {!forgotSent ? (
+                  <form onSubmit={handleForgotSubmit} noValidate>
+                    <div className="text-center mb-6">
+                      <div
+                        className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3 text-2xl"
+                        style={{ background: "color-mix(in srgb, var(--accent-primary, #f5ab20) 10%, transparent)", border: "1px solid color-mix(in srgb, var(--accent-primary, #f5ab20) 24%, transparent)" }}
+                      >
+                        🔑
+                      </div>
+                      <h3 className="font-bold text-lg mb-1" style={{ color: "var(--text-primary, white)" }}>Forgot Password?</h3>
+                      <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary, #8ca5bc)" }}>
+                        Enter your email and we'll send you a reset link.
+                      </p>
+                    </div>
 
-                <FormGroup label="Confirm New Password">
-                  <ModalInput
-                    type="password"
-                    placeholder="Confirm new password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                  />
-                </FormGroup>
+                    {error   && <div className="alert-msg alert-error">{error}</div>}
+                    {success && <div className="alert-msg alert-success">{success}</div>}
 
-                {error && <div className="error-message">{error}</div>}
-                {success && <div className="success-message">{success}</div>}
+                    <FormGroup label="Email Address">
+                      <input
+                        type="email"
+                        className="modal-input"
+                        placeholder="you@example.com"
+                        value={forgotEmail}
+                        onChange={(e) => setForgotEmail(e.target.value)}
+                        required
+                      />
+                    </FormGroup>
 
-                <SubmitButton disabled={isSubmitting}>
-                  {isSubmitting ? "Resetting..." : "Reset Password →"}
-                </SubmitButton>
-
-                <p className="text-center mt-4">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setResetStep("request");
-                      setError("");
-                      setSuccess("");
-                    }}
-                    className="text-[#8ca5bc] text-sm hover:text-[#f5ab20] transition-colors bg-transparent border-none cursor-pointer"
-                  >
-                    ← Didn't receive code? Try again
-                  </button>
-                </p>
-              </form>
+                    <SubmitButton disabled={isSubmitting}>
+                      {isSubmitting ? "Sending…" : "Send Reset Link →"}
+                    </SubmitButton>
+                  </form>
+                ) : (
+                  <div className="text-center py-6">
+                    <div className="text-5xl mb-4">📬</div>
+                    <h3 className="font-bold text-lg mb-2" style={{ color: "var(--text-primary, white)" }}>Check Your Email</h3>
+                    <p className="text-sm mb-6 leading-relaxed" style={{ color: "var(--text-secondary, #8ca5bc)" }}>
+                      A reset link was sent to{" "}
+                      <span className="font-semibold" style={{ color: "var(--accent-primary, #f5ab20)" }}>
+                        {forgotEmail}
+                      </span>
+                      <br />
+                      <span className="text-xs opacity-70">(Simulated — no real email in demo)</span>
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => { setForgotSent(false); switchView("signin"); }}
+                      className="text-sm font-semibold underline bg-transparent border-none cursor-pointer hover:opacity-80 transition-opacity"
+                      style={{ color: "var(--accent-primary, #f5ab20)" }}
+                    >
+                      Back to Sign In
+                    </button>
+                  </div>
+                )}
+              </div>
             )}
           </div>
-        )}
+        </div>
       </div>
     </>
   );
 }
 
-// Helper Components
 function FormGroup({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex flex-col gap-1.5 mb-3 flex-1">
-      <label className="text-[0.74rem] font-medium text-[#8ca5bc]">{label}</label>
+    <div className="flex flex-col gap-1.5 mb-4 flex-1">
+      <label className="text-[0.76rem] font-semibold tracking-wide" style={{ color: "var(--text-secondary, #8ca5bc)" }}>
+        {label}
+      </label>
       {children}
     </div>
-  );
-}
-
-function ModalInput({ 
-  type, 
-  placeholder, 
-  value, 
-  onChange, 
-  required 
-}: { 
-  type: string; 
-  placeholder?: string; 
-  value?: string; 
-  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void; 
-  required?: boolean;
-}) {
-  return (
-    <input
-      type={type}
-      placeholder={placeholder || ""}
-      className="modal-input"
-      value={value}
-      onChange={onChange}
-      required={required}
-    />
-  );
-}
-
-function ModalSelect({ 
-  value, 
-  onChange, 
-  options, 
-  required 
-}: { 
-  value?: string; 
-  onChange?: (e: React.ChangeEvent<HTMLSelectElement>) => void; 
-  options: { value: string; label: string }[];
-  required?: boolean;
-}) {
-  return (
-    <select className="modal-input" value={value} onChange={onChange} required={required}>
-      {options.map((opt) => (
-        <option key={opt.value} value={opt.value}>
-          {opt.label}
-        </option>
-      ))}
-    </select>
   );
 }
 
@@ -705,7 +616,8 @@ function SubmitButton({ children, disabled }: { children: React.ReactNode; disab
     <button
       type="submit"
       disabled={disabled}
-      className="w-full py-2.5 rounded-full text-[0.9rem] font-bold text-[#0d1f2d] bg-[#f5ab20] border-none cursor-pointer transition-all duration-200 hover:bg-[#e8941a] hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(245,166,35,0.3)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+      className="w-full py-3 rounded-full text-[0.92rem] font-bold border-none cursor-pointer transition-all duration-200 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+      style={{ background: "var(--accent-primary, #f5ab20)", color: "#ffffff", boxShadow: "0 8px 24px color-mix(in srgb, var(--accent-primary, #f5ab20) 25%, transparent)" }}
     >
       {children}
     </button>
