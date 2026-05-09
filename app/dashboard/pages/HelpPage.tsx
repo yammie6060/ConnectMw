@@ -40,7 +40,7 @@ export function HelpPage({ color }: HelpPageProps) {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {[
           { icon: Mail, label: "Email Support", sub: "support@connectmw.com" },
-          { icon: Phone, label: "Call Us", sub: "+265 111 222 333" },
+          { icon: Phone, label: "Call Us", sub: "+265 983 933 510" },
         ].map(({ icon: Icon, label, sub }) => (
           <div key={label} className="rounded-xl p-4 text-center" style={{ background: "var(--bg-secondary, #132333)", border: "1px solid rgba(255,255,255,0.07)" }}>
             <Icon size={20} style={{ color, margin: "0 auto 8px" }} />

@@ -8,6 +8,7 @@ import { NavItem, NavMode } from "../types/dashboard";
 const NAV_PROMPT_DISMISSED_KEY = "connectmw_nav_prompt_dismissed";
 const NAV_PROMPT_AUTO_HIDE_MS = 120000;
 
+
 type TourStep = {
   title: string;
   text: string;
@@ -294,3 +295,6 @@ export function DashboardTour({
     </>
   );
 }
+
+
+
