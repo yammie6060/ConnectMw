@@ -81,10 +81,6 @@ export function ProfilePage({ color, user, meta }: ProfilePageProps) {
 
         <div className="lg:col-span-2 rounded-xl p-5" style={{ background: "var(--bg-secondary, #132333)", border: "1px solid rgba(255,255,255,0.07)" }}>
           <div className="flex items-center justify-between gap-3 mb-5">
-            <div>
-              <h3 className="text-sm font-bold" style={{ color: "var(--text-primary, white)" }}>Profile Details</h3>
-              <p className="text-[11px] mt-0.5" style={{ color: "var(--text-secondary, #8ca5bc)" }}>These details appear across your dashboard and public profile.</p>
-            </div>
             <button onClick={() => setEditMode(!editMode)}
               className="text-xs font-semibold flex items-center gap-1.5 px-3 py-2 rounded-lg"
               style={{ background: `${color}18`, color }}>

@@ -23,7 +23,7 @@ export function LogoutConfirmModal({ onCancel, onConfirm }: LogoutConfirmModalPr
           <div className="flex-1">
             <h2 className="text-base font-black" style={{ color: "var(--text-primary, white)" }}>Sign out?</h2>
             <p className="text-xs leading-relaxed mt-1" style={{ color: "var(--text-secondary, #8ca5bc)" }}>
-              You will leave the dashboard and return to the sign-in page.
+              You will leave the dashboard and return to the home page.
             </p>
           </div>
           <button

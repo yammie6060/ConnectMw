@@ -19,11 +19,13 @@ import { PrivacyPage } from '../pages/PrivacyPage';
 import { HelpPage } from '../pages/HelpPage';
 import { NotificationsPage } from '../pages/NotificationsPage';
 
+// Create a cache to store component instances with their state
+const pageCache = new Map<string, ReactElement>();
 
-
-
-
-
+// Clear cache when needed (e.g., on logout)
+export function clearPageCache() {
+  pageCache.clear();
+}
 
 export function renderPage(
   activeItem: string,
@@ -37,61 +39,97 @@ export function renderPage(
   const { color } = meta;
   const role = user.role;
 
+  // Create a unique key for this page instance
+  const cacheKey = `${activeItem}-${user.id}-${isDarkMode}`;
+
+  // Check if we already have this component instance cached
+  if (pageCache.has(cacheKey)) {
+    return pageCache.get(cacheKey)!;
+  }
+
+  let component: ReactElement;
+
   switch (activeItem) {
     case "overview":    
-      return <OverviewPage user={user} meta={meta} navItems={navItems} setActiveItem={setActiveItem} />;
+      component = <OverviewPage user={user} meta={meta} navItems={navItems} setActiveItem={setActiveItem} />;
+      break;
 
     // Spare Seller
     case "inventory":   
-      return <InventoryPage color={color} role={role} />;
+      component = <InventoryPage color={color} role={role} />;
+      break;
     case "enquiries":   
-      return <EnquiriesPage color={color} />;
+      component = <EnquiriesPage color={color} />;
+      break;
     case "add":         
-      return <AddPartPage color={color} />;
+      component = <AddPartPage color={color} />;
+      break;
     case "analytics":   
-      return <AnalyticsPage color={color} meta={meta} />;
+      component = <AnalyticsPage color={color} meta={meta} />;
+      break;
 
     // Landlord
     case "listings":    
-      return <InventoryPage color={color} role={role} />;
+      component = <InventoryPage color={color} role={role} />;
+      break;
     case "calendar":    
-      return <CalendarPage color={color} role={role} />;
+      component = <CalendarPage color={color} role={role} />;
+      break;
 
     // Beauty Provider
     case "schedule":    
-      return <CalendarPage color={color} role={role} />;
+      component = <CalendarPage color={color} role={role} />;
+      break;
     case "portfolio":   
-      return <PortfolioPage color={color} />;
+      component = <PortfolioPage color={color} />;
+      break;
 
     // Customer
     case "rentals":     
-      return <RentalsPage color={color} />;
+      component = <RentalsPage color={color} />;
+      break;
     case "bookings":    
-      return <BookingsPage color={color} />;
+      component = <BookingsPage color={color} />;
+      break;
     case "orders":      
-      return <OrdersPage color={color} />;
+      component = <OrdersPage color={color} />;
+      break;
     case "reviews":     
-      return <ReviewsPage color={color} />;
+      component = <ReviewsPage color={color} />;
+      break;
 
     // Shared
     case "notifications":
-      return <NotificationsPage color={color} />;
+      component = <NotificationsPage color={color} key="notifications-page" />;
+      break;
     case "messages":    
-      return <MessagesPage color={color} />;
+      component = <MessagesPage color={color} key="messages-page" />;
+      break;
     case "settings":    
-      return <SettingsPage color={color} user={user} isDarkMode={isDarkMode} toggleTheme={toggleTheme} onNavigate={setActiveItem} />;
+      component = <SettingsPage color={color} user={user} isDarkMode={isDarkMode} toggleTheme={toggleTheme} onNavigate={setActiveItem} />;
+      break;
 
     // Profile menu
     case "profile":     
-      return <ProfilePage color={color} user={user} meta={meta} />;
+      component = <ProfilePage color={color} user={user} meta={meta} />;
+      break;
     case "billing":     
-      return <BillingPage color={color} />;
+      component = <BillingPage color={color} />;
+      break;
     case "privacy":     
-      return <PrivacyPage color={color} />;
+      component = <PrivacyPage color={color} />;
+      break;
     case "help":        
-      return <HelpPage color={color} />;
+      component = <HelpPage color={color} />;
+      break;
 
     default:            
-      return <OverviewPage user={user} meta={meta} navItems={navItems} setActiveItem={setActiveItem} />;
+      component = <OverviewPage user={user} meta={meta} navItems={navItems} setActiveItem={setActiveItem} />;
+      break;
   }
+
+  // Cache the component
+  pageCache.set(cacheKey, component);
+  
+  return component;
 }
