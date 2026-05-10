@@ -1,6 +1,6 @@
 import AuthCard from "@/components/AuthModal";
 
 
-export default function SignInPage() {
-  return <AuthCard defaultTab="signin" />;
+export default function SignUpPage() {
+  return <AuthCard defaultTab="signup" />;
 }

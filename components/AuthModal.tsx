@@ -305,7 +305,7 @@ export default function AuthCard({ defaultTab }: AuthCardProps) {
         style={{ background: "radial-gradient(ellipse at center, color-mix(in srgb, var(--accent-primary, #f5ab20) 18%, transparent) 0%, transparent 65%)" }}
       />
 
-      <div className="w-full flex justify-center items-center min-h-screen px-4 py-8">
+      <div className="w-full flex justify-center items-center min-h-[calc(100dvh-180px)] px-4 py-8">
         <div
           className="relative w-full max-w-[560px] rounded-2xl overflow-y-auto"
           style={{

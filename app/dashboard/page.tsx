@@ -92,7 +92,7 @@ export default function DashboardPage() {
             />
             <text x="32" y="38" textAnchor="middle" fontSize="22" fontWeight="900" fill="#ffffff" fontFamily="Arial, sans-serif">C</text>
           </svg>
-          <p className="text-[#8ca5bc] text-sm">Loading your dashboard…</p>
+          <p className="text-[#8ca5bc] text-sm">Loading Please Wait…</p>
         </div>
       </div>
     );

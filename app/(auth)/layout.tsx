@@ -1,5 +1,5 @@
 import Footer from "@/components/Footer";
-import Link from "next/link";
+import Navbar from "@/components/Navbar";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -7,19 +7,9 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       className="min-h-screen flex flex-col"
       style={{ background: "#0d1f2d" }}
     >
-      {/* Auth navbar */}
-      <header className="flex items-center justify-between px-[10%] h-[68px] border-b border-[rgba(245,166,35,0.12)]">
-        <Link
-          href="/"
-          className="font-black text-[1.25rem] text-white no-underline"
-          style={{ fontFamily: " sans-serif" }}
-        >
-          Connect<span style={{ color: "#f5ab20" }}>MW</span>
-        </Link>
-      </header>
+      <Navbar />
 
-      {/* Page content */}
-      <main className="flex-1 flex items-center justify-center px-4 py-6">
+      <main className="flex-1 flex items-center justify-center px-4 pb-10 pt-[92px]">
         {children}
       </main>
 

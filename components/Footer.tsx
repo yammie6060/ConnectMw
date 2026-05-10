@@ -1,10 +1,7 @@
 "use client";
 
-const footerLinks = {
-  Services: ["HomeConnect", "BeautyConnect", "SpareFinder", "List Your Business"],
-  Company: ["About Us", "MiNDTech Company", "Careers", "Press & Media", "Contact"],
-  Legal: ["Privacy Policy", "Terms of Service", "Cookie Policy", "Provider Agreement"],
-};
+import Link from "next/link";
+import { footerLinkGroups } from "@/lib/marketingContent";
 
 const socials = [
   { 
@@ -70,13 +67,13 @@ export default function Footer() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
         {/* Brand */}
         <div className="lg:col-span-1">
-          <a
-            href="#home"
+          <Link
+            href="/"
             className="font-black text-[1.25rem] text-white no-underline block mb-3"
             style={{ fontFamily: " sans-serif" }}
           >
             Connect<span style={{ color: "#f5ab20" }}>MW</span>
-          </a>
+          </Link>
           <p className="text-sm text-[#8ca5bc] leading-[1.7] max-w-[280px]">
             Malawi&apos;s all-in-one platform for rentals, beauty services, and
             auto spares. Verified. Secure. Local.
@@ -108,23 +105,32 @@ export default function Footer() {
         </div>
 
         {/* Link columns */}
-        {Object.entries(footerLinks).map(([heading, links]) => (
-          <div key={heading}>
+        {footerLinkGroups.map((group) => (
+          <div key={group.heading}>
             <h4
               className="font-bold text-sm text-white mb-4"
               style={{ fontFamily: " sans-serif" }}
             >
-              {heading}
+              {group.heading}
             </h4>
             <ul className="list-none flex flex-col gap-2">
-              {links.map((link) => (
-                <li key={link}>
-                  <a
-                    href="#"
-                    className="text-[0.83rem] text-[#8ca5bc] no-underline transition-all duration-200 hover:text-[#f5ab20] hover:translate-x-1 inline-block"
-                  >
-                    {link}
-                  </a>
+              {group.links.map((link) => (
+                <li key={link.href}>
+                  {link.external ? (
+                    <a
+                      href={link.href}
+                      className="text-[0.83rem] text-[#8ca5bc] no-underline transition-all duration-200 hover:text-[#f5ab20] hover:translate-x-1 inline-block"
+                    >
+                      {link.label}
+                    </a>
+                  ) : (
+                    <Link
+                      href={link.href}
+                      className="text-[0.83rem] text-[#8ca5bc] no-underline transition-all duration-200 hover:text-[#f5ab20] hover:translate-x-1 inline-block"
+                    >
+                      {link.label}
+                    </Link>
+                  )}
                 </li>
               ))}
             </ul>

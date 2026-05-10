@@ -7,11 +7,11 @@ import { useRouter } from "next/navigation";
 import { getSession, clearSession } from "@/lib/auth";
 
 const navLinks = [
-  { href: "#services",  label: "Services" },
-  { href: "#how",       label: "How It Works" },
-  { href: "#about",     label: "About" },
-  { href: "#reviews",   label: "Reviews" },
-  { href: "#contact",   label: "Contact" },
+  { href: "/#services", label: "Services" },
+  { href: "/#how", label: "How It Works" },
+  { href: "/#about", label: "About" },
+  { href: "/#reviews", label: "Reviews" },
+  { href: "/#contact", label: "Contact" },
 ];
 
 export default function Navbar() {

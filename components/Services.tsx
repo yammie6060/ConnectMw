@@ -2,6 +2,7 @@
 "use client";
 
 import { Banknote, Phone, ChevronLeft, ChevronRight, Home, Sparkles, Car, ExternalLink } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 
 const services = [
@@ -81,6 +82,8 @@ const paymentMethods = [
 ];
 
 export default function Services() {
+  const router = useRouter();
+
   const handlePaymentClick = (href: string, e: React.MouseEvent) => {
     e.preventDefault();
     console.log(`Navigate to: ${href}`);
@@ -88,17 +91,7 @@ export default function Services() {
 
   const handleServiceClick = (href: string, e: React.MouseEvent) => {
     e.preventDefault();
-    // Smooth scroll to section or navigate
-    console.log(`Navigate to: ${href}`);
-    // window.location.href = href; // Uncomment for actual navigation
-  };
-
-  // Scroll to services section (for "Learn more" links)
-  const scrollToServices = () => {
-    const servicesSection = document.getElementById('services');
-    if (servicesSection) {
-      servicesSection.scrollIntoView({ behavior: 'smooth' });
-    }
+    router.push(href);
   };
 
   return (
