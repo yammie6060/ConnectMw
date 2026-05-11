@@ -60,34 +60,6 @@ npm run start
 
 Starts the production server after a successful build.
 
-## Project Structure
-
-```text
-app/
-  page.tsx                  Main landing page
-  layout.tsx                Root layout and metadata
-  globals.css               Global styles
-  (auth)/
-    signin/page.tsx         Sign-in route
-    signup/page.tsx         Sign-up route
-    forgot-password/page.tsx
-
-components/
-  About.tsx
-  AuthModal.tsx
-  Contact.tsx
-  CTABanner.tsx
-  Footer.tsx
-  Hero.tsx
-  HowItWorks.tsx
-  Navbar.tsx
-  Reviews.tsx
-  Services.tsx
-
-public/
-  Static assets and icons
-```
-
 ## Current Notes
 
 - The contact form currently shows a local success state and does not submit to a backend.
