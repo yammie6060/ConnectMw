@@ -1,25 +1,55 @@
 import { useState } from 'react';
 import { PageShell } from '../components/PageShell';
-import { Plus, Edit2, Trash2, Star, Clock, Tag } from 'lucide-react';
+import { Plus, Edit2, Trash2, Star, Clock, Tag, Camera } from 'lucide-react';
 
-const CATEGORIES = ['All', 'Hair', 'Nails', 'Makeup', 'Lashes', 'Beauty'];
+const CATEGORIES = ['All', 'Hair', 'Barbering', 'Nails', 'Makeup', 'Lashes', 'Beauty'];
 
 const INITIAL_SERVICES = [
-  { id: 1, title: "Knotless Braids",    category: "Hair",   price: 15000, duration: "4–5 hrs", rating: 4.9, reviews: 24, emoji: "🪢" },
-  { id: 2, title: "Acrylic Nail Set",   category: "Nails",  price: 8000,  duration: "2 hrs",   rating: 4.8, reviews: 18, emoji: "💅" },
-  { id: 3, title: "Bridal Makeup",      category: "Makeup", price: 25000, duration: "2–3 hrs", rating: 5.0, reviews: 11, emoji: "👰" },
-  { id: 4, title: "Lash Extensions",    category: "Lashes", price: 12000, duration: "1.5 hrs", rating: 4.7, reviews: 31, emoji: "👁" },
-  { id: 5, title: "Hair Colour",        category: "Hair",   price: 20000, duration: "3 hrs",   rating: 4.6, reviews: 9,  emoji: "🎨" },
-  { id: 6, title: "Eyebrow Threading",  category: "Beauty", price: 3000,  duration: "20 min",  rating: 4.9, reviews: 42, emoji: "✨" },
+  {
+    id: 1, title: "Knotless Braids", category: "Hair", price: 15000, duration: "4-5 hrs", rating: 4.9, reviews: 24,
+    image: "https://images.unsplash.com/photo-1749805045793-80b5d32016ba?auto=format&fit=crop&w=900&q=80",
+  },
+  {
+    id: 2, title: "Barber Cut & Line-up", category: "Barbering", price: 7000, duration: "45 min", rating: 4.8, reviews: 36,
+    image: "https://images.unsplash.com/photo-1768363446104-b8a0c1716600?auto=format&fit=crop&w=900&q=80",
+  },
+  {
+    id: 3, title: "Acrylic Nail Set", category: "Nails", price: 8000, duration: "2 hrs", rating: 4.8, reviews: 18,
+    image: "https://images.unsplash.com/photo-1632345031435-8727f6897d53?auto=format&fit=crop&w=900&q=80",
+  },
+  {
+    id: 4, title: "Bridal Makeup", category: "Makeup", price: 25000, duration: "2-3 hrs", rating: 5.0, reviews: 11,
+    image: "https://images.unsplash.com/photo-1765852549271-64171b460d4b?auto=format&fit=crop&w=900&q=80",
+  },
+  {
+    id: 5, title: "Scissor Cut & Styling", category: "Barbering", price: 9000, duration: "1 hr", rating: 4.7, reviews: 21,
+    image: "https://images.unsplash.com/photo-1761931403671-d020a14928d9?auto=format&fit=crop&w=900&q=80",
+  },
+  {
+    id: 6, title: "Manicure & Nail Care", category: "Beauty", price: 6500, duration: "1 hr", rating: 4.9, reviews: 42,
+    image: "https://images.unsplash.com/photo-1648241815778-fdc8daf0d6ef?auto=format&fit=crop&w=900&q=80",
+  },
 ];
 
-interface PortfolioPageProps { color: string }
+const DEFAULT_IMAGE_BY_CATEGORY: Record<string, string> = {
+  Hair: "https://images.unsplash.com/photo-1749805045793-80b5d32016ba?auto=format&fit=crop&w=900&q=80",
+  Barbering: "https://images.unsplash.com/photo-1768363446104-b8a0c1716600?auto=format&fit=crop&w=900&q=80",
+  Nails: "https://images.unsplash.com/photo-1632345031435-8727f6897d53?auto=format&fit=crop&w=900&q=80",
+  Makeup: "https://images.unsplash.com/photo-1765852549271-64171b460d4b?auto=format&fit=crop&w=900&q=80",
+  Lashes: "https://images.unsplash.com/photo-1758738880475-dac2ab1c92d4?auto=format&fit=crop&w=900&q=80",
+  Beauty: "https://images.unsplash.com/photo-1648241815778-fdc8daf0d6ef?auto=format&fit=crop&w=900&q=80",
+};
 
-export function PortfolioPage({ color }: PortfolioPageProps) {
+interface PortfolioPageProps {
+  color: string;
+  initialShowAdd?: boolean;
+}
+
+export function PortfolioPage({ color, initialShowAdd = false }: PortfolioPageProps) {
   const [activeCat, setActiveCat] = useState('All');
   const [services, setServices] = useState(INITIAL_SERVICES);
-  const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({ title: '', category: 'Hair', price: '', duration: '', emoji: '✂' });
+  const [showAdd, setShowAdd] = useState(initialShowAdd);
+  const [form, setForm] = useState({ title: '', category: 'Hair', price: '', duration: '', image: '' });
 
   const filtered = services.filter(s => activeCat === 'All' || s.category === activeCat);
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
@@ -30,9 +60,9 @@ export function PortfolioPage({ color }: PortfolioPageProps) {
     setServices(s => [...s, {
       id: Date.now(), title: form.title, category: form.category,
       price: Number(form.price), duration: form.duration || '1 hr',
-      rating: 0, reviews: 0, emoji: form.emoji,
+      rating: 0, reviews: 0, image: form.image || DEFAULT_IMAGE_BY_CATEGORY[form.category],
     }]);
-    setForm({ title: '', category: 'Hair', price: '', duration: '', emoji: '✂' });
+    setForm({ title: '', category: 'Hair', price: '', duration: '', image: '' });
     setShowAdd(false);
   };
 
@@ -43,7 +73,7 @@ export function PortfolioPage({ color }: PortfolioPageProps) {
   } as React.CSSProperties;
 
   return (
-    <PageShell title="My Portfolio" subtitle="Showcase your services and attract more clients" color={color}>
+    <PageShell title="My Services" subtitle="Manage salon, barber, grooming, and beauty services" color={color}>
       {/* Stats row */}
       <div className="grid grid-cols-3 gap-3 mb-6">
         {[
@@ -86,17 +116,17 @@ export function PortfolioPage({ color }: PortfolioPageProps) {
           <div className="grid grid-cols-2 gap-3 mb-3">
             <div className="col-span-2">
               <label className="block text-[10px] font-semibold mb-1 uppercase" style={{ color: '#8ca5bc' }}>Service Name</label>
-              <input value={form.title} onChange={set('title')} placeholder="e.g. Ghana Weave" style={fieldStyle} />
+              <input value={form.title} onChange={set('title')} placeholder="e.g. Fade Cut, Ghana Weave, Bridal Makeup" style={fieldStyle} />
             </div>
             <div>
               <label className="block text-[10px] font-semibold mb-1 uppercase" style={{ color: '#8ca5bc' }}>Category</label>
               <select value={form.category} onChange={set('category')} style={fieldStyle}>
-                {['Hair','Nails','Makeup','Lashes','Beauty'].map(c => <option key={c}>{c}</option>)}
+                {['Hair','Barbering','Nails','Makeup','Lashes','Beauty'].map(c => <option key={c}>{c}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-[10px] font-semibold mb-1 uppercase" style={{ color: '#8ca5bc' }}>Emoji Icon</label>
-              <input value={form.emoji} onChange={set('emoji')} placeholder="✂" style={{ ...fieldStyle, textAlign: 'center', fontSize: '20px' }} />
+              <label className="block text-[10px] font-semibold mb-1 uppercase" style={{ color: '#8ca5bc' }}>Image URL</label>
+              <input value={form.image} onChange={set('image')} placeholder="Optional - paste a photo URL" style={fieldStyle} />
             </div>
             <div>
               <label className="block text-[10px] font-semibold mb-1 uppercase" style={{ color: '#8ca5bc' }}>Price (MWK)</label>
@@ -110,7 +140,7 @@ export function PortfolioPage({ color }: PortfolioPageProps) {
           <button onClick={handleAdd}
             className="w-full py-2.5 rounded-xl text-sm font-bold transition-all hover:brightness-110"
             style={{ background: color, color: '#0d1f2d' }}>
-            Add to Portfolio
+            Add Service
           </button>
         </div>
       )}
@@ -121,8 +151,14 @@ export function PortfolioPage({ color }: PortfolioPageProps) {
           <div key={item.id} className="rounded-2xl overflow-hidden transition-all hover:-translate-y-0.5 group"
             style={{ background: 'var(--bg-secondary, #132333)', border: '1px solid rgba(255,255,255,0.07)' }}>
             {/* Visual */}
-            <div className="h-24 flex items-center justify-center relative" style={{ background: `${color}10` }}>
-              <span className="text-5xl">{item.emoji}</span>
+            <div className="h-36 relative overflow-hidden" style={{ background: `${color}10` }}>
+              <img
+                src={item.image}
+                alt={item.title}
+                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                loading="lazy"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/5 to-transparent" />
               <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button className="w-6 h-6 rounded-lg flex items-center justify-center"
                   style={{ background: 'rgba(0,0,0,0.4)', color: '#fff' }}>
@@ -134,12 +170,17 @@ export function PortfolioPage({ color }: PortfolioPageProps) {
                   <Trash2 size={10} />
                 </button>
               </div>
+              <span className="absolute bottom-2 left-2 inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full"
+                style={{ background: 'rgba(0,0,0,0.58)', color: '#fff', backdropFilter: 'blur(8px)' }}>
+                <Camera size={10} /> Service photo
+              </span>
             </div>
             {/* Info */}
             <div className="p-3">
               <div className="text-sm font-bold mb-1" style={{ color: 'var(--text-primary, white)' }}>{item.title}</div>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: `${color}15`, color }}>
+                  <Tag size={9} className="inline mr-1" />
                   {item.category}
                 </span>
                 {item.rating > 0 && (

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { PageShell } from '../components/PageShell';
-import { Search, Filter, Plus, Package, Edit2, Trash2 } from 'lucide-react';
+import { Search, Filter, Plus, Package, Edit2, Trash2, Home } from 'lucide-react';
 
 const INVENTORY_ITEMS = [
   { id: 1, name: "Toyota Hiace Side Mirror (Right)", sku: "TH-SM-001", price: "K8,500", stock: 4, category: "Exterior", status: "In Stock", views: 34 },
@@ -26,7 +26,9 @@ export function InventoryPage({ color, role }: InventoryPageProps) {
   const [search, setSearch] = useState("");
   const items = role === "landlord" ? LANDLORD_LISTINGS : INVENTORY_ITEMS;
   const title = role === "landlord" ? "My Listings" : "Inventory";
-  const sub = role === "landlord" ? "All your property listings" : "Manage your spare parts stock";
+  const sub = role === "landlord" ? "Manage houses, apartments, hostels, and rooms" : "Manage your spare parts stock";
+  const itemName = role === "landlord" ? "Property" : "Part";
+  const ItemIcon = role === "landlord" ? Home : Package;
 
   const statusColor = (s: string) =>
     s === "In Stock" || s === "Available" ? "#10b981"
@@ -51,7 +53,7 @@ export function InventoryPage({ color, role }: InventoryPageProps) {
           <Filter size={13} /> Filter
         </button>
         <button className="px-3 py-2 rounded-xl flex items-center justify-center gap-1.5 text-xs font-semibold" style={{ background: color, color: "#0d1f2d" }}>
-          <Plus size={13} /> Add
+          <Plus size={13} /> Add {itemName}
         </button>
       </div>
 
@@ -63,7 +65,7 @@ export function InventoryPage({ color, role }: InventoryPageProps) {
             style={{ background: "var(--bg-secondary, #132333)", border: "1px solid rgba(255,255,255,0.07)" }}>
             <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
               style={{ background: `${color}15`, border: `1px solid ${color}25` }}>
-              <Package size={15} style={{ color }} />
+              <ItemIcon size={15} style={{ color }} />
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-sm font-semibold truncate" style={{ color: "var(--text-primary, white)" }}>

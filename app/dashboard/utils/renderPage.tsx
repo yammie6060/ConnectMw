@@ -4,6 +4,7 @@ import { OverviewPage } from '../pages/OverviewPage';
 import { InventoryPage } from '../pages/InventoryPage';
 import { EnquiriesPage } from '../pages/EnquiriesPage';
 import { AddPartPage } from '../pages/AddPartPage';
+import { AddPropertyPage } from '../pages/AddPropertyPage';
 import { AnalyticsPage } from '../pages/AnalyticsPage';
 import { CalendarPage } from '../pages/CalendarPage';
 import { PortfolioPage } from '../pages/PortfolioPage';
@@ -56,13 +57,17 @@ export function renderPage(
 
     // Spare Seller
     case "inventory":   
-      component = <InventoryPage color={color} role={role} />;
+      component = role === "spareSeller"
+        ? <InventoryPage color={color} role={role} />
+        : <OverviewPage user={user} meta={meta} navItems={navItems} setActiveItem={setActiveItem} />;
       break;
     case "enquiries":   
       component = <EnquiriesPage color={color} />;
       break;
     case "add":         
-      component = <AddPartPage color={color} />;
+      component = role === "spareSeller"
+        ? <AddPartPage color={color} />
+        : <OverviewPage user={user} meta={meta} navItems={navItems} setActiveItem={setActiveItem} />;
       break;
     case "analytics":   
       component = <AnalyticsPage color={color} meta={meta} />;
@@ -70,7 +75,14 @@ export function renderPage(
 
     // Landlord
     case "listings":    
-      component = <InventoryPage color={color} role={role} />;
+      component = role === "landlord"
+        ? <InventoryPage color={color} role={role} />
+        : <OverviewPage user={user} meta={meta} navItems={navItems} setActiveItem={setActiveItem} />;
+      break;
+    case "upload":
+      component = role === "landlord"
+        ? <AddPropertyPage color={color} />
+        : <OverviewPage user={user} meta={meta} navItems={navItems} setActiveItem={setActiveItem} />;
       break;
     case "calendar":    
       component = <CalendarPage color={color} role={role} />;
@@ -81,7 +93,9 @@ export function renderPage(
       component = <CalendarPage color={color} role={role} />;
       break;
     case "portfolio":   
-      component = <PortfolioPage color={color} />;
+      component = role === "beautyProvider"
+        ? <PortfolioPage color={color} />
+        : <OverviewPage user={user} meta={meta} navItems={navItems} setActiveItem={setActiveItem} />;
       break;
 
     // Customer
@@ -104,11 +118,10 @@ export function renderPage(
     case "saved":
       component = <RentalsPage color={color} />;   
       break;
-    case "upload":
-      component = <AddPartPage color={color} />;   
-      break;
     case "add-service":
-      component = <PortfolioPage color={color} />;  
+      component = role === "beautyProvider"
+        ? <PortfolioPage color={color} initialShowAdd />
+        : <OverviewPage user={user} meta={meta} navItems={navItems} setActiveItem={setActiveItem} />;
       break;
 
     // Shared

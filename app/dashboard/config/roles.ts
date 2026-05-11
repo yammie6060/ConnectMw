@@ -18,7 +18,7 @@ export const ROLE_META: Record<string, RoleMeta> = {
     ],
   },
   landlord: {
-    label: "Landlord", color: "#10b981", icon: Home,
+    label: "Landlord", color: "#f5ab20", icon: Home,
     greeting: "Manage your properties and enquiries.",
     statCards: [
       { label: "Active Listings", value: "4",     icon: Home,          delta: "2 available" },
@@ -33,7 +33,7 @@ export const ROLE_META: Record<string, RoleMeta> = {
     ],
   },
   beautyProvider: {
-    label: "Beauty Provider", color: "#ec4899", icon: Sparkles,
+    label: "Beauty Provider", color: "#f5ab20", icon: Sparkles,
     greeting: "Your bookings and portfolio are looking great!",
     statCards: [
       { label: "Bookings Today",  value: "3",    icon: Calendar },
@@ -48,7 +48,7 @@ export const ROLE_META: Record<string, RoleMeta> = {
     ],
   },
   spareSeller: {
-    label: "Spare Parts Seller", color: "#3b82f6", icon: Car,
+    label: "Spare Parts Seller", color: "#f5ab20", icon: Car,
     greeting: "Parts listed. Drivers are searching near you.",
     statCards: [
       { label: "Active Listings", value: "12",   icon: Package,      delta: "+2 this week" },

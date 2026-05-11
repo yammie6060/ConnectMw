@@ -3,7 +3,7 @@ const nextConfig = {
   reactStrictMode: true,
   devIndicators: {
     buildActivity: true,
-    buildActivityPosition: "bottom-left",
+    buildActivityPosition: "top-right",
   },
 };
 
