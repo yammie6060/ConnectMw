@@ -81,19 +81,6 @@ export default function Hero({ onOpenModal }: HeroProps) {
           }}
         />
 
-        {/* Badge */}
-        <div
-          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-6 w-fit"
-          style={{
-            background: "rgba(245,166,35,0.12)",
-            border: "1px solid rgba(245,166,35,0.3)",
-            animation: "fadeUp 0.6s ease both",
-          }}
-        >
-          <span className="w-1.5 h-1.5 rounded-full bg-[#f5ab20]" style={{ animation: "pulse2 1.8s infinite" }} />
-          <span className="text-[#f5ab20] text-xs font-semibold tracking-widest uppercase">Live in Malawi</span>
-        </div>
-
         {/* Headline */}
         <h1
           className="text-4xl font-black leading-[1.1] tracking-[-1px] mb-4 text-white"
