@@ -6,8 +6,9 @@ export function generateStaticParams() {
   return Object.keys(servicePages).map((service) => ({ service }));
 }
 
-export default function ServicePage({ params }: { params: { service: string } }) {
-  const content = servicePages[params.service];
+export default async function ServicePage({ params }: { params: Promise<{ service: string }> }) {
+  const { service } = await params;
+  const content = servicePages[service];
 
   if (!content) {
     notFound();
