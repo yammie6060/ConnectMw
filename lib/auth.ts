@@ -1,21 +1,7 @@
-// lib/auth.ts  –  Simulated auth, no backend. Uses localStorage as the "database".
+// lib/auth.ts
 
-export interface StoredUser {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  role: string;
-  password: string;
-  businessName?: string;
-  serviceMode?: string;
-  companyName?: string;
-  idNumber?: string;
-  garageName?: string;
-  businessType?: string;
-  createdAt: string;
-}
+const ACCESS_TOKEN_KEY = "connectmw_access_token";
+const AUTH_USER_KEY = "connectmw_auth_user";
 
 export interface SessionUser {
   id: string;
@@ -29,90 +15,47 @@ export interface SessionUser {
   garageName?: string;
 }
 
-const USERS_KEY = "connectmw_users";
-const SESSION_KEY = "connectmw_session";
-
-function getUsers(): StoredUser[] {
-  if (typeof window === "undefined") return [];
-  try {
-    return JSON.parse(localStorage.getItem(USERS_KEY) || "[]");
-  } catch {
-    return [];
-  }
-}
-
-function saveUsers(users: StoredUser[]) {
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
-}
-
-export function registerUser(data: Omit<StoredUser, "id" | "createdAt">): {
-  ok: boolean;
-  error?: string;
-  user?: SessionUser;
-} {
-  const users = getUsers();
-  if (users.find((u) => u.email.toLowerCase() === data.email.toLowerCase())) {
-    return { ok: false, error: "An account with that email already exists." };
-  }
-  const user: StoredUser = {
-    ...data,
-    id: `user_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-    createdAt: new Date().toISOString(),
-  };
-  saveUsers([...users, user]);
-  const session = toSession(user);
-  setSession(session);
-  return { ok: true, user: session };
-}
-
-export function loginUser(emailOrPhone: string, password: string): {
-  ok: boolean;
-  error?: string;
-  user?: SessionUser;
-} {
-  const users = getUsers();
-  const user = users.find(
-    (u) =>
-      (u.email.toLowerCase() === emailOrPhone.toLowerCase() ||
-        u.phone === emailOrPhone) &&
-      u.password === password
-  );
-  if (!user) {
-    return { ok: false, error: "Incorrect email/phone or password." };
-  }
-  const session = toSession(user);
-  setSession(session);
-  return { ok: true, user: session };
-}
+const ROLE_KEY_MAP: Record<string, string> = {
+  spare_seller: "spareSeller",
+  beauty_provider: "beautyProvider",
+};
 
 export function getSession(): SessionUser | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = sessionStorage.getItem(SESSION_KEY);
-    return raw ? JSON.parse(raw) : null;
+    const raw = localStorage.getItem("connectmw_auth_user");
+    if (!raw) return null;
+    const { user, profile } = JSON.parse(raw);
+
+    const fullName: string = profile?.full_name ?? "";
+    const parts = fullName.trim().split(/\s+/);
+    const firstName = parts[0] ?? "";
+    const lastName = parts.slice(1).join(" "); // handles middle names too
+
+    let role = "customer";
+    if (user.providers?.length > 0) {
+      const providerType = user.providers[0].type ?? "customer";
+      role = ROLE_KEY_MAP[providerType] ?? providerType;
+    } else if (user.roles?.includes("customer")) {
+      role = "customer";
+    }
+
+    return {
+      id: user.id,
+      firstName,
+      lastName,
+      email: user.email,
+      phone: user.phone,
+      role,
+      businessName: user.providers?.[0]?.business_name ?? undefined,
+    };
   } catch {
     return null;
   }
 }
 
-export function setSession(user: SessionUser) {
-  sessionStorage.setItem(SESSION_KEY, JSON.stringify(user));
-}
-
 export function clearSession() {
-  sessionStorage.removeItem(SESSION_KEY);
-}
-
-function toSession(u: StoredUser): SessionUser {
-  return {
-    id: u.id,
-    firstName: u.firstName,
-    lastName: u.lastName,
-    email: u.email,
-    phone: u.phone,
-    role: u.role,
-    businessName: u.businessName,
-    companyName: u.companyName,
-    garageName: u.garageName,
-  };
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(ACCESS_TOKEN_KEY);
+  localStorage.removeItem(AUTH_USER_KEY);
 }

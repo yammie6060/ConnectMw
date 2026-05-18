@@ -1,73 +1,84 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import type { ComponentType, FormEvent, ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, Sparkle, User2, Wrench, Eye, EyeOff } from "lucide-react";
-import { registerUser, loginUser } from "@/lib/auth";
+import {
+  Building2,
+  BriefcaseBusiness,
+  Sparkles,
+  User2,
+  Wrench,
+  Eye,
+  EyeOff,
+  Loader2,
+  type LucideProps,  // Import LucideProps type
+} from "lucide-react";
+import { ApiError } from "@/services/api";
+import { authService, RegisterPayload, RegisterData } from "@/services/auth.service";
+import { providerService, ProviderTypeOption } from "@/services/provider.service";
 
-interface SignupFormData {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  role: string;
-  password: string;
-  businessName?: string;
-  serviceMode?: string;
-  companyName?: string;
-  idNumber?: string;
-  garageName?: string;
-  businessType?: string;
-}
 
-interface AuthCardProps {
-  defaultTab: View;
-}
-
-const ROLE_CONFIGS = {
-  customer: {
-    label: "Customer (looking for services)",
-    fields: [] as RoleField[],
-    icon: User2,
-  },
-  landlord: {
-    label: "Landlord / Property Agent",
-    icon: Building2,
-    fields: [
-      { name: "companyName", label: "Company/Agency Name", type: "text", required: true, placeholder: "MBC Property Management", colSpan: 2 },
-      { name: "idNumber", label: "National ID / Registration", type: "text", required: true, placeholder: "1234567890", colSpan: 2 },
-    ] as RoleField[],
-  },
-  beautyProvider: {
-    label: "Beauty Service Provider",
-    icon: Sparkle,
-    fields: [
-      { name: "businessName", label: "Salon/Business Name", type: "text", required: true, placeholder: "Glamour Cuts Salon", colSpan: 2 },
-      { name: "serviceMode", label: "Service Mode", type: "select", required: true, options: ["Salon Only", "Mobile Only", "Both"], colSpan: 2 },
-    ] as RoleField[],
-  },
-  spareSeller: {
-    label: "Auto Spare Parts Seller",
-    icon: Wrench,
-    fields: [
-      { name: "garageName", label: "Garage/Shop Name", type: "text", required: true, placeholder: "Toyota Spares Center", colSpan: 2 },
-      { name: "businessType", label: "Business Type", type: "select", required: true, options: ["Individual Seller", "Garage", "Wholesaler", "Retailer"], colSpan: 2 },
-    ] as RoleField[],
-  },
-} as const;
-
-type UserRole = keyof typeof ROLE_CONFIGS;
-type RoleField = {
-  name: string;
+type AccountTypeOption = {
+  value: string;         
   label: string;
-  type: "text" | "select";
-  required: boolean;
-  placeholder?: string;
-  options?: string[];
-  colSpan?: 1 | 2;
+  icon: ComponentType<LucideProps>;  // Use LucideProps instead of custom type
 };
 
-type View = "signin" | "signup" | "forgotPassword";
+type View = "signin" | "signup" | "forgotPassword" | "verifyEmail";
+
+type SignupFormData = {
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  password: string;
+  account_type: string;
+};
+
+interface AuthCardProps {
+  defaultTab?: "signin" | "signup" | "forgotPassword";
+  onAuthenticated?: () => void;
+}
+
+// Fix: Use LucideProps for the icon type
+const ICON_MAP: Record<string, ComponentType<LucideProps>> = {
+  customer: User2,
+  spare_seller: Wrench,
+  beauty_provider: Sparkles,
+  landlord: Building2,
+  agent: BriefcaseBusiness,
+};
+
+const CUSTOMER_OPTION: AccountTypeOption = {
+  value: "customer",
+  label: "Customer",
+  icon: User2,
+};
+
+const PASSWORD_HELPER = "At least 8 characters with one letter and one number.";
+
+function getErrorMessage(err: unknown): string {
+  if (err instanceof ApiError || err instanceof Error) return err.message;
+  return "Something went wrong. Please try again.";
+}
+
+function applyTheme() {
+  const isLight = localStorage.getItem("connectmw_theme") === "light";
+  const r = document.documentElement;
+  r.style.setProperty("--bg-primary", isLight ? "#f3f4f6" : "#0d1f2d");
+  r.style.setProperty("--bg-secondary", isLight ? "#ffffff" : "#132333");
+  r.style.setProperty("--bg-elevated", isLight ? "#f8fafc" : "#1a2e42");
+  r.style.setProperty("--bg-muted", isLight ? "#eef2f7" : "rgba(255,255,255,0.05)");
+  r.style.setProperty("--text-primary", isLight ? "#111827" : "#ffffff");
+  r.style.setProperty("--text-secondary", isLight ? "#6b7280" : "#8ca5bc");
+  r.style.setProperty("--text-soft", isLight ? "#334155" : "#cde0f0");
+  r.style.setProperty("--accent", isLight ? "#b45309" : "#f5ab20");
+  r.style.setProperty("--border", isLight ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.1)");
+  r.style.setProperty("--shadow", isLight ? "rgba(15,23,42,0.14)" : "rgba(0,0,0,0.5)");
+  document.body.style.background = isLight ? "#f3f4f6" : "#0d1f2d";
+  document.body.style.color = isLight ? "#111827" : "#ffffff";
+}
 
 function PasswordInput({
   placeholder,
@@ -82,14 +93,15 @@ function PasswordInput({
 }) {
   const [show, setShow] = useState(false);
   return (
-    <div className="relative">
+    <div style={{ position: "relative" }}>
       <input
         type={show ? "text" : "password"}
-        className="modal-input pr-10"
+        className="c-input"
         placeholder={placeholder}
         value={value}
         onChange={onChange}
         required={required}
+        style={{ paddingRight: "2.5rem" }}
       />
       <button
         type="button"
@@ -98,16 +110,15 @@ function PasswordInput({
         aria-label={show ? "Hide password" : "Show password"}
         style={{
           position: "absolute",
-          right: "0.65rem",
+          right: "0.7rem",
           top: "50%",
           transform: "translateY(-50%)",
           background: "none",
           border: "none",
           cursor: "pointer",
-          color: "#8ca5bc",
-          padding: "2px",
+          color: "var(--text-secondary)",
+          padding: 0,
           display: "flex",
-          alignItems: "center",
         }}
       >
         {show ? <EyeOff size={15} /> : <Eye size={15} />}
@@ -116,249 +127,446 @@ function PasswordInput({
   );
 }
 
-export default function AuthCard({ defaultTab }: AuthCardProps) {
+function FormGroup({ label, helper, children }: { label: string; helper?: string; children: ReactNode }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem", marginBottom: "1rem", flex: 1 }}>
+      <label style={{ fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.04em", color: "var(--text-secondary)" }}>
+        {label}
+      </label>
+      {children}
+      {helper && <span style={{ fontSize: "0.7rem", color: "var(--text-secondary)" }}>{helper}</span>}
+    </div>
+  );
+}
+
+function SubmitButton({ children, disabled }: { children: ReactNode; disabled?: boolean }) {
+  return (
+    <button
+      type="submit"
+      disabled={disabled}
+      style={{
+        width: "100%",
+        padding: "0.75rem",
+        borderRadius: 999,
+        fontSize: "0.92rem",
+        fontWeight: 700,
+        border: "none",
+        cursor: disabled ? "not-allowed" : "pointer",
+        background: "var(--accent)",
+        color: "#fff",
+        opacity: disabled ? 0.55 : 1,
+        transition: "transform 0.15s, opacity 0.15s",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: "0.5rem",
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+function Alert({ type, message }: { type: "error" | "success"; message: string }) {
+  return (
+    <div
+      style={{
+        borderRadius: 10,
+        padding: "0.65rem 1rem",
+        fontSize: "0.82rem",
+        fontWeight: 600,
+        textAlign: "center",
+        marginBottom: "0.85rem",
+        background: type === "error" ? "rgba(239,68,68,0.15)" : "rgba(16,185,129,0.15)",
+        border: `1px solid ${type === "error" ? "rgba(239,68,68,0.35)" : "rgba(16,185,129,0.35)"}`,
+        color: type === "error" ? "#f87171" : "#34d399",
+      }}
+    >
+      {message}
+    </div>
+  );
+}
+
+function Tab({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        flex: 1,
+        paddingBottom: "0.75rem",
+        textAlign: "center",
+        fontWeight: 700,
+        fontSize: "0.88rem",
+        background: "transparent",
+        border: "none",
+        cursor: "pointer",
+        color: active ? "var(--accent)" : "var(--text-secondary)",
+        borderBottom: active ? "2px solid var(--accent)" : "2px solid transparent",
+        marginBottom: "-1px",
+        transition: "color 0.2s",
+      }}
+    >
+      {label}
+    </button>
+  );
+}
+
+export default function AuthCard({ defaultTab = "signin", onAuthenticated }: AuthCardProps) {
   const router = useRouter();
-  const [currentView, setCurrentView] = useState<View>(defaultTab);
-  const [signupData, setSignupData] = useState<SignupFormData>({
-    firstName: "", lastName: "", email: "", phone: "", role: "", password: "",
+
+  const [view, setView] = useState<View>(defaultTab);
+  const [accountTypes, setAccountTypes] = useState<AccountTypeOption[]>([CUSTOMER_OPTION]);
+  const [typesLoading, setTypesLoading] = useState(true);
+
+  const [signup, setSignup] = useState<SignupFormData>({
+    first_name: "",
+    last_name: "",
+    email: "",
+    phone: "",
+    password: "",
+    account_type: "customer",
   });
-  const [signinEmail, setSigninEmail] = useState("");
-  const [signinPassword, setSigninPassword] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [signin, setSignin] = useState({ email: "", password: "" });
+
+  const [verificationEmail, setVerificationEmail] = useState("");
+  const [verificationCode, setVerificationCode] = useState("");
+  const [pendingProviderInfo, setPendingProviderInfo] = useState<RegisterData | null>(null);
+
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [resetCode, setResetCode] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [resetStep, setResetStep] = useState<"request" | "verify">("request");
+
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const [forgotEmail, setForgotEmail] = useState("");
-  const [forgotSent, setForgotSent] = useState(false);
-
   useEffect(() => {
-    const isLight = localStorage.getItem("connectmw_theme") === "light";
-    const root = document.documentElement;
-
-    root.style.setProperty("--bg-primary", isLight ? "#f3f4f6" : "#0d1f2d");
-    root.style.setProperty("--bg-secondary", isLight ? "#ffffff" : "#132333");
-    root.style.setProperty("--bg-elevated", isLight ? "#f8fafc" : "#1a2e42");
-    root.style.setProperty("--bg-muted", isLight ? "#eef2f7" : "rgba(255,255,255,0.05)");
-    root.style.setProperty("--text-primary", isLight ? "#111827" : "#ffffff");
-    root.style.setProperty("--text-secondary", isLight ? "#6b7280" : "#8ca5bc");
-    root.style.setProperty("--text-soft", isLight ? "#334155" : "#cde0f0");
-    root.style.setProperty("--accent-primary", isLight ? "#b45309" : "#f5ab20");
-    root.style.setProperty("--border-color", isLight ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.1)");
-    root.style.setProperty("--shadow-color", isLight ? "rgba(15,23,42,0.14)" : "rgba(0,0,0,0.5)");
-    document.body.style.background = isLight ? "#f3f4f6" : "#0d1f2d";
-    document.body.style.color = isLight ? "#111827" : "#ffffff";
+    applyTheme();
   }, []);
 
-  const switchView = (view: View) => {
-    setCurrentView(view);
+  useEffect(() => {
+    providerService
+      .getProviderTypes()
+      .then((res) => {
+        if (res.data && Array.isArray(res.data)) {
+          const dynamic: AccountTypeOption[] = res.data.map((pt: ProviderTypeOption) => ({
+            value: pt.name,
+            label: pt.display_name,
+            icon: ICON_MAP[pt.name] || User2,
+          }));
+          setAccountTypes([CUSTOMER_OPTION, ...dynamic]);
+        }
+      })
+      .catch(() => {
+        setAccountTypes([CUSTOMER_OPTION]);
+      })
+      .finally(() => setTypesLoading(false));
+  }, []);
+
+  const switchView = useCallback((v: View) => {
+    setView(v);
     setError("");
     setSuccess("");
-  };
+  }, []);
 
-  const handleSignupChange = (field: keyof SignupFormData, value: string) => {
-    setSignupData((prev) => ({ ...prev, [field]: value }));
+  const setSignupField = (field: keyof SignupFormData, value: string) => {
+    setSignup((prev) => ({ ...prev, [field]: value }));
     setError("");
   };
 
-  const handleSignupSubmit = async (e: React.FormEvent) => {
+  const isProvider = signup.account_type !== "customer";
+  const selectedType = accountTypes.find((t) => t.value === signup.account_type);
+
+  const handleSignup = async (e: FormEvent) => {
     e.preventDefault();
-    setError("");
-
-    if (!signupData.role) { setError("Please select your role."); return; }
-
-    const roleConfig = ROLE_CONFIGS[signupData.role as UserRole];
-    if (roleConfig?.fields) {
-      for (const field of roleConfig.fields) {
-        if (field.required && !signupData[field.name as keyof SignupFormData]) {
-          setError(`Please fill in ${field.label}`);
-          return;
-        }
-      }
-    }
-
-    if (signupData.password.length < 6) {
-      setError("Password must be at least 6 characters.");
+    if (signup.password.length < 8) {
+      setError("Password must be at least 8 characters.");
       return;
     }
-
-    setIsSubmitting(true);
-    await new Promise((r) => setTimeout(r, 700));
-
-    const result = registerUser({
-      firstName: signupData.firstName,
-      lastName: signupData.lastName,
-      email: signupData.email,
-      phone: signupData.phone,
-      role: signupData.role,
-      password: signupData.password,
-      businessName: signupData.businessName,
-      serviceMode: signupData.serviceMode,
-      companyName: signupData.companyName,
-      idNumber: signupData.idNumber,
-      garageName: signupData.garageName,
-      businessType: signupData.businessType,
-    });
-
-    setIsSubmitting(false);
-    if (!result.ok) { setError(result.error!); return; }
-    setSuccess("Account created! Redirecting to your dashboard…");
-    setTimeout(() => router.push("/dashboard"), 1000);
-  };
-
-  const handleSigninSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    setSubmitting(true);
     setError("");
-    setIsSubmitting(true);
-    await new Promise((r) => setTimeout(r, 600));
-    const result = loginUser(signinEmail, signinPassword);
-    setIsSubmitting(false);
-    if (!result.ok) { setError(result.error!); return; }
-    setSuccess("Welcome back! Redirecting…");
-    setTimeout(() => router.push("/dashboard"), 800);
+    setSuccess("");
+
+    const payload: RegisterPayload = {
+      email: signup.email.trim(),
+      phone: signup.phone.trim(),
+      password: signup.password,
+      full_name: `${signup.first_name.trim()} ${signup.last_name.trim()}`.trim(),
+      register_as_provider: isProvider,
+      provider_type: isProvider ? signup.account_type : null,
+    };
+
+    try {
+      const res = await authService.register(payload);
+      setPendingProviderInfo(res.data ?? null);
+      setVerificationEmail(payload.email);
+      setSuccess(res.message);
+      switchView("verifyEmail");
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const handleForgotSubmit = async (e: React.FormEvent) => {
+  const handleSignin = async (e: FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
-    await new Promise((r) => setTimeout(r, 800));
-    setIsSubmitting(false);
-    setForgotSent(true);
+    setSubmitting(true);
+    setError("");
+    setSuccess("");
+
+    try {
+      await authService.login({
+        email: signin.email.trim(),
+        password: signin.password,
+      });
+      setSuccess("Welcome back! Redirecting…");
+      onAuthenticated?.();
+      setTimeout(() => {
+        router.push("/dashboard");
+        router.refresh();
+      }, 700);
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 403) {
+        setVerificationEmail(signin.email.trim());
+        switchView("verifyEmail");
+      }
+      setError(getErrorMessage(err));
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const getRoleFields = (role: string): RoleField[] => {
-    if (!role) return [];
-    return ROLE_CONFIGS[role as UserRole]?.fields || [];
+  const handleVerifyEmail = async (e: FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setError("");
+    setSuccess("");
+
+    try {
+      const res = await authService.verifyEmail(verificationEmail.trim(), verificationCode.trim());
+      setSuccess(res.message);
+      setVerificationCode("");
+
+      setTimeout(() => {
+        const providerId =
+          pendingProviderInfo?.provider_info?.provider_id ??
+          res.data?.user.providers?.[0]?.id;
+
+        if (providerId) {
+          router.push(`/dashboard/provider-setup/${providerId}`);
+        } else {
+          onAuthenticated?.();
+          router.push("/dashboard");
+        }
+      }, 1200);
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!verificationEmail.trim()) {
+      setError("Enter your email address first.");
+      return;
+    }
+    setSubmitting(true);
+    setError("");
+    setSuccess("");
+    try {
+      const res = await authService.resendVerification(verificationEmail.trim());
+      setSuccess(res.message);
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleForgotPassword = async (e: FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setError("");
+    setSuccess("");
+    try {
+      const res = await authService.forgotPassword(forgotEmail.trim());
+      setSuccess(res.message);
+      setResetStep("verify");
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleResetPassword = async (e: FormEvent) => {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+    if (newPassword.length < 8) {
+      setError("Password must be at least 8 characters.");
+      return;
+    }
+    setSubmitting(true);
+    setError("");
+    setSuccess("");
+    try {
+      const res = await authService.resetPassword(forgotEmail.trim(), resetCode.trim(), newPassword);
+      setSuccess(res.message);
+      setTimeout(() => {
+        setResetStep("request");
+        switchView("signin");
+      }, 1400);
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
     <>
       <style jsx global>{`
         @keyframes scaleIn {
-          from { opacity: 0; transform: scale(0.95); }
-          to   { opacity: 1; transform: scale(1); }
+          from { opacity: 0; transform: scale(0.96); }
+          to { opacity: 1; transform: scale(1); }
         }
-        @keyframes slideIn {
-          from { opacity: 0; transform: translateX(-16px); }
-          to   { opacity: 1; transform: translateX(0); }
+        @keyframes slideDown {
+          from { opacity: 0; transform: translateY(-8px); }
+          to { opacity: 1; transform: translateY(0); }
         }
-        .modal-input {
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        .animate-spin {
+          animation: spin 1s linear infinite;
+        }
+        .c-input {
           width: 100%;
-          background: var(--bg-elevated, rgba(255,255,255,0.05));
-          border: 1.5px solid var(--border-color, rgba(255,255,255,0.1));
+          background: var(--bg-elevated);
+          border: 1.5px solid var(--border);
           border-radius: 10px;
-          color: var(--text-primary, white);
-          padding: 0.7rem 0.95rem;
+          color: var(--text-primary);
+          padding: 0.68rem 0.9rem;
+          font-size: 0.875rem;
           font-family: "DM Sans", sans-serif;
-          font-size: 0.88rem;
           outline: none;
-          transition: border-color 0.2s, background 0.2s;
+          transition: border-color 0.18s, background 0.18s;
           box-sizing: border-box;
         }
-        .modal-input:focus { border-color: var(--accent-primary, #f5ab20); background: color-mix(in srgb, var(--accent-primary, #f5ab20) 5%, var(--bg-secondary, #132333)); }
-        .modal-input::placeholder { color: var(--text-secondary, #8ca5bc); }
-        .modal-input option { background: var(--bg-secondary, #132333); color: var(--text-primary, white); }
-
-        /* ── Styled error / success banners ── */
-        .alert-msg {
-          border-radius: 10px;
-          padding: 0.65rem 1rem;
-          font-size: 0.82rem;
-          font-weight: 600;
-          text-align: center;
-          margin-bottom: 0.85rem;
+        .c-input:focus {
+          border-color: var(--accent);
+          background: color-mix(in srgb, var(--accent) 5%, var(--bg-secondary));
         }
-        .alert-error {
-          background: rgba(239, 68, 68, 0.15);
-          border: 1px solid rgba(239, 68, 68, 0.35);
-          color: #f87171;
+        .c-input::placeholder {
+          color: var(--text-secondary);
         }
-        .alert-success {
-          background: rgba(16, 185, 129, 0.15);
-          border: 1px solid rgba(16, 185, 129, 0.35);
-          color: #34d399;
+        .c-input option {
+          background: var(--bg-secondary);
+          color: var(--text-primary);
         }
-
-        .form-grid   { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.85rem; }
-        .form-grid-full { grid-column: span 2; }
-        .role-badge {
-          background: rgba(245,195,32,0.08);
-          border: 1px solid rgba(245,195,32,0.2);
-          border-radius: 8px;
-          padding: 0.5rem 0.75rem;
-          margin-bottom: 0.85rem;
-          font-size: 0.76rem;
-          color: var(--accent-primary, #f5ab20);
+        .grid2 {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 0.85rem;
+        }
+        @media (max-width: 520px) {
+          .grid2 {
+            grid-template-columns: 1fr;
+            gap: 0.7rem;
+          }
+        }
+        .provider-badge {
           display: inline-flex;
           align-items: center;
-          gap: 0.5rem;
+          gap: 0.45rem;
+          background: color-mix(in srgb, var(--accent) 10%, transparent);
+          border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
+          border-radius: 8px;
+          padding: 0.45rem 0.75rem;
+          font-size: 0.76rem;
+          color: var(--accent);
+          margin-bottom: 1rem;
+          animation: slideDown 0.2s ease;
         }
-        .dynamic-fields { animation: slideIn 0.22s ease-out; }
-
-        @media (max-width: 640px) {
-          .form-grid { grid-template-columns: 1fr; gap: 0.75rem; }
-          .form-grid-full { grid-column: auto; }
+        .link-btn {
+          background: none;
+          border: none;
+          cursor: pointer;
+          color: var(--accent);
+          font-weight: 600;
+          font-size: inherit;
+          padding: 0;
+          text-decoration: none;
+        }
+        .link-btn:hover {
+          text-decoration: underline;
         }
       `}</style>
 
       <div
-        className="pointer-events-none fixed inset-0 -z-10"
-        style={{ background: "radial-gradient(ellipse at center, color-mix(in srgb, var(--accent-primary, #f5ab20) 18%, transparent) 0%, transparent 65%)" }}
+        aria-hidden
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: -1,
+          pointerEvents: "none",
+          background: "radial-gradient(ellipse at center, color-mix(in srgb, var(--accent) 16%, transparent) 0%, transparent 62%)",
+        }}
       />
 
-      <div className="w-full flex justify-center items-center min-h-[calc(100dvh-180px)] px-4 py-8">
+      <div style={{ width: "100%", display: "flex", justifyContent: "center", alignItems: "center", minHeight: "calc(100dvh - 180px)", padding: "2rem 1rem" }}>
         <div
-          className="relative w-full max-w-[560px] rounded-2xl overflow-y-auto"
           style={{
-            background: "var(--bg-secondary, #132333)",
-            border: "1px solid var(--border-color, rgba(245,166,35,0.18))",
-            boxShadow: "0 24px 60px var(--shadow-color, rgba(0,0,0,0.5))",
-            animation: "scaleIn 0.25s ease both",
+            width: "100%",
+            maxWidth: 560,
+            background: "var(--bg-secondary)",
+            border: "1px solid var(--border)",
+            borderRadius: 20,
+            boxShadow: "0 24px 60px var(--shadow)",
+            animation: "scaleIn 0.22s ease both",
             maxHeight: "calc(100dvh - 2rem)",
+            overflowY: "auto",
           }}
         >
-          <div className="p-7 sm:p-9">
-            {/* Brand */}
-            <div className="font-black text-[1.3rem] sm:text-[1.5rem] mb-0.5 tracking-tight" style={{ color: "var(--text-primary, white)" }}>
-              Connect<span style={{ color: "var(--accent-primary, #f5ab20)" }}>MW</span>
+          <div style={{ padding: "2rem 2.25rem" }}>
+            <div style={{ fontWeight: 900, fontSize: "1.4rem", letterSpacing: "-0.02em", marginBottom: "0.2rem", color: "var(--text-primary)" }}>
+              Connect<span style={{ color: "var(--accent)" }}>MW</span>
             </div>
-            <p className="text-[0.8rem] sm:text-[0.85rem] mb-5 sm:mb-6 leading-relaxed" style={{ color: "var(--text-secondary, #8ca5bc)" }}>
+            <p style={{ fontSize: "0.82rem", color: "var(--text-secondary)", marginBottom: "1.5rem" }}>
               Your all-in-one local services platform
             </p>
 
-            {/* Tabs */}
-            {(currentView === "signin" || currentView === "signup") && (
-              <div className="flex mb-6" style={{ borderBottom: "1px solid var(--border-color, rgba(255,255,255,0.08))" }}>
-                {(["signin", "signup"] as const).map((v) => (
-                  <button
-                    key={v}
-                    type="button"
-                    onClick={() => switchView(v)}
-                    className="flex-1 pb-3 text-center font-bold text-sm bg-transparent border-none cursor-pointer transition-all duration-200"
-                    style={{
-                      color: currentView === v ? "var(--accent-primary, #f5ab20)" : "var(--text-secondary, #8ca5bc)",
-                      borderBottom: currentView === v ? "2px solid var(--accent-primary, #f5ab20)" : "2px solid transparent",
-                      marginBottom: "-1px",
-                    }}
-                  >
-                    {v === "signin" ? "Sign In" : "Sign Up"}
-                  </button>
-                ))}
+            {(view === "signin" || view === "signup") && (
+              <div style={{ display: "flex", borderBottom: "1px solid var(--border)", marginBottom: "1.5rem" }}>
+                <Tab label="Sign In" active={view === "signin"} onClick={() => switchView("signin")} />
+                <Tab label="Sign Up" active={view === "signup"} onClick={() => switchView("signup")} />
               </div>
             )}
 
-            {/* ── SIGN IN ── */}
-            {currentView === "signin" && (
-              <form onSubmit={handleSigninSubmit} noValidate>
-                {error   && <div className="alert-msg alert-error">{error}</div>}
-                {success && <div className="alert-msg alert-success">{success}</div>}
+            {view === "signin" && (
+              <form onSubmit={handleSignin} noValidate>
+                {error && <Alert type="error" message={error} />}
+                {success && <Alert type="success" message={success} />}
 
-                <FormGroup label="Email or Phone Number">
+                <FormGroup label="Email or Phone">
                   <input
                     type="text"
-                    className="modal-input"
+                    className="c-input"
                     placeholder="you@example.com or 0888 000 000"
-                    value={signinEmail}
-                    onChange={(e) => { setSigninEmail(e.target.value); setError(""); }}
+                    value={signin.email}
+                    onChange={(e) => {
+                      setSignin((p) => ({ ...p, email: e.target.value }));
+                      setError("");
+                    }}
                     required
                   />
                 </FormGroup>
@@ -366,230 +574,372 @@ export default function AuthCard({ defaultTab }: AuthCardProps) {
                 <FormGroup label="Password">
                   <PasswordInput
                     placeholder="Enter your password"
-                    value={signinPassword}
-                    onChange={(e) => { setSigninPassword(e.target.value); setError(""); }}
+                    value={signin.password}
+                    onChange={(e) => {
+                      setSignin((p) => ({ ...p, password: e.target.value }));
+                      setError("");
+                    }}
                     required
                   />
                 </FormGroup>
 
-                <div className="flex justify-end mb-5 -mt-1">
-                  <button
-                    type="button"
-                    onClick={() => switchView("forgotPassword")}
-                    className="text-xs bg-transparent border-none cursor-pointer hover:underline"
-                    style={{ color: "var(--accent-primary, #f5ab20)" }}
-                  >
+                <div style={{ textAlign: "right", marginBottom: "1.25rem", marginTop: "-0.5rem" }}>
+                  <button type="button" className="link-btn" style={{ fontSize: "0.8rem" }} onClick={() => switchView("forgotPassword")}>
                     Forgot password?
                   </button>
                 </div>
 
-                <SubmitButton disabled={isSubmitting}>
-                  {isSubmitting ? "Signing In…" : "Sign In →"}
+                <SubmitButton disabled={submitting}>
+                  {submitting && <Loader2 size={15} className="animate-spin" />}
+                  {submitting ? "Signing In…" : "Sign In →"}
                 </SubmitButton>
 
-                <p className="text-center mt-4 text-[0.82rem]" style={{ color: "var(--text-secondary, #8ca5bc)" }}>
+                <p style={{ textAlign: "center", marginTop: "1rem", fontSize: "0.82rem", color: "var(--text-secondary)" }}>
                   Don&apos;t have an account?{" "}
-                  <button
-                    type="button"
-                    onClick={() => switchView("signup")}
-                    className="bg-transparent border-none cursor-pointer font-semibold hover:underline"
-                    style={{ color: "var(--accent-primary, #f5ab20)" }}
-                  >
+                  <button type="button" className="link-btn" onClick={() => switchView("signup")}>
                     Sign up free
                   </button>
                 </p>
               </form>
             )}
 
-            {/* ── SIGN UP ── */}
-            {currentView === "signup" && (
-              <form onSubmit={handleSignupSubmit} noValidate>
-                {error   && <div className="alert-msg alert-error">{error}</div>}
-                {success && <div className="alert-msg alert-success">{success}</div>}
+            {view === "signup" && (
+              <form onSubmit={handleSignup} noValidate>
+                {error && <Alert type="error" message={error} />}
+                {success && <Alert type="success" message={success} />}
 
-                <div className="form-grid">
+                <div className="grid2">
                   <FormGroup label="First Name">
-                    <input type="text" className="modal-input" placeholder="Tawonga"
-                      value={signupData.firstName}
-                      onChange={(e) => handleSignupChange("firstName", e.target.value)} required />
+                    <input
+                      type="text"
+                      className="c-input"
+                      placeholder="Tawonga"
+                      value={signup.first_name}
+                      onChange={(e) => setSignupField("first_name", e.target.value)}
+                      required
+                    />
                   </FormGroup>
                   <FormGroup label="Last Name">
-                    <input type="text" className="modal-input" placeholder="Mbewe"
-                      value={signupData.lastName}
-                      onChange={(e) => handleSignupChange("lastName", e.target.value)} required />
-                  </FormGroup>
-                </div>
-
-                <div className="form-grid">
-                  <FormGroup label="Email Address">
-                    <input type="email" className="modal-input" placeholder="you@example.com"
-                      value={signupData.email}
-                      onChange={(e) => handleSignupChange("email", e.target.value)} required />
-                  </FormGroup>
-                  <FormGroup label="Phone Number">
-                    <input type="tel" className="modal-input" placeholder="+265 888 000 000"
-                      value={signupData.phone}
-                      onChange={(e) => handleSignupChange("phone", e.target.value)} required />
-                  </FormGroup>
-                </div>
-
-                <div className="form-grid">
-                  <FormGroup label="I want to join as">
-                    <select
-                      className="modal-input"
-                      value={signupData.role}
-                      onChange={(e) => handleSignupChange("role", e.target.value)}
-                      required
-                    >
-                      <option value="">Select your role…</option>
-                      <option value="customer">Customer (looking for services)</option>
-                      <option value="landlord">🏠 Landlord / Property Agent</option>
-                      <option value="beautyProvider">✨ Beauty Service Provider</option>
-                      <option value="spareSeller">🔧 Auto Spare Parts Seller</option>
-                    </select>
-                  </FormGroup>
-
-                  <FormGroup label="Password">
-                    <PasswordInput
-                      placeholder="Create a strong password"
-                      value={signupData.password}
-                      onChange={(e) => handleSignupChange("password", e.target.value)}
+                    <input
+                      type="text"
+                      className="c-input"
+                      placeholder="Mbewe"
+                      value={signup.last_name}
+                      onChange={(e) => setSignupField("last_name", e.target.value)}
                       required
                     />
                   </FormGroup>
                 </div>
 
-                {signupData.role && getRoleFields(signupData.role).length > 0 && (
-                  <div className="dynamic-fields mt-1">
-                    <div className="role-badge">
-                      {(() => {
-                        const Icon = ROLE_CONFIGS[signupData.role as UserRole]?.icon;
-                        return Icon ? <Icon size={15} strokeWidth={2} /> : null;
-                      })()}
-                      <span>
-                        Additional info for{" "}
-                        <strong>{ROLE_CONFIGS[signupData.role as UserRole]?.label}</strong>
-                      </span>
-                    </div>
-                    <div className="form-grid">
-                      {getRoleFields(signupData.role).map((field) => (
-                        <div key={field.name} className={field.colSpan === 2 ? "form-grid-full" : ""}>
-                          <FormGroup label={field.label}>
-                            {field.type === "select" ? (
-                              <select
-                                className="modal-input"
-                                value={signupData[field.name as keyof SignupFormData] as string || ""}
-                                onChange={(e) => handleSignupChange(field.name as keyof SignupFormData, e.target.value)}
-                                required={field.required}
-                              >
-                                <option value="">Select {field.label}…</option>
-                                {field.options?.map((opt) => (
-                                  <option key={opt} value={opt.toLowerCase().replace(/\s+/g, "_")}>
-                                    {opt}
-                                  </option>
-                                ))}
-                              </select>
-                            ) : (
-                              <input
-                                type="text"
-                                className="modal-input"
-                                placeholder={field.placeholder}
-                                value={signupData[field.name as keyof SignupFormData] as string || ""}
-                                onChange={(e) => handleSignupChange(field.name as keyof SignupFormData, e.target.value)}
-                                required={field.required}
-                              />
-                            )}
-                          </FormGroup>
-                        </div>
-                      ))}
-                    </div>
+                <div className="grid2">
+                  <FormGroup label="Email Address">
+                    <input
+                      type="email"
+                      className="c-input"
+                      placeholder="you@example.com"
+                      value={signup.email}
+                      onChange={(e) => setSignupField("email", e.target.value)}
+                      required
+                    />
+                  </FormGroup>
+                  <FormGroup label="Phone Number" helper="Use +265 or 0 followed by 9 digits.">
+                    <input
+                      type="tel"
+                      className="c-input"
+                      placeholder="+265 888 000 000"
+                      value={signup.phone}
+                      onChange={(e) => setSignupField("phone", e.target.value)}
+                      required
+                    />
+                  </FormGroup>
+                </div>
+
+                <div className="grid2">
+                  <FormGroup label="Account Type">
+                    {typesLoading ? (
+                      <div className="c-input" style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--text-secondary)" }}>
+                        <Loader2 size={14} className="animate-spin" />
+                        <span>Loading…</span>
+                      </div>
+                    ) : (
+                      <select
+                        className="c-input"
+                        value={signup.account_type}
+                        onChange={(e) => setSignupField("account_type", e.target.value)}
+                        required
+                      >
+                        {accountTypes.map((t) => (
+                          <option key={t.value} value={t.value}>
+                            {t.label}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </FormGroup>
+
+                  <FormGroup label="Password" helper={PASSWORD_HELPER}>
+                    <PasswordInput
+                      placeholder="Create a strong password"
+                      value={signup.password}
+                      onChange={(e) => setSignupField("password", e.target.value)}
+                      required
+                    />
+                  </FormGroup>
+                </div>
+
+                {isProvider && selectedType && (
+                  <div className="provider-badge">
+                    {(() => {
+                      const Icon = selectedType.icon;
+                      return <Icon size={14} strokeWidth={2} />;
+                    })()}
+                    <span>
+                      Registering as <strong>{selectedType.label}</strong>
+                    </span>
                   </div>
                 )}
 
-                <SubmitButton disabled={isSubmitting}>
-                  {isSubmitting ? "Creating Account…" : "Create Account →"}
+                <SubmitButton disabled={submitting || typesLoading}>
+                  {submitting && <Loader2 size={15} className="animate-spin" />}
+                  {submitting ? "Creating Account…" : "Create Account →"}
                 </SubmitButton>
 
-                <p className="text-center mt-4 text-[0.82rem]" style={{ color: "var(--text-secondary, #8ca5bc)" }}>
+                <p style={{ textAlign: "center", marginTop: "1rem", fontSize: "0.82rem", color: "var(--text-secondary)" }}>
                   Already have an account?{" "}
-                  <button
-                    type="button"
-                    onClick={() => switchView("signin")}
-                    className="bg-transparent border-none cursor-pointer font-semibold hover:underline"
-                    style={{ color: "var(--accent-primary, #f5ab20)" }}
-                  >
+                  <button type="button" className="link-btn" onClick={() => switchView("signin")}>
                     Sign in
                   </button>
                 </p>
               </form>
             )}
 
-            {/* ── FORGOT PASSWORD ── */}
-            {currentView === "forgotPassword" && (
-              <div>
+            {view === "verifyEmail" && (
+              <form onSubmit={handleVerifyEmail}>
                 <button
                   type="button"
+                  className="link-btn"
+                  style={{ fontSize: "0.82rem", color: "var(--text-secondary)", marginBottom: "1.25rem", display: "block" }}
                   onClick={() => switchView("signin")}
-                  className="flex items-center gap-1.5 text-[0.82rem] bg-transparent border-none cursor-pointer transition-colors mb-5"
-                  style={{ color: "var(--text-secondary, #8ca5bc)" }}
                 >
                   ← Back to Sign In
                 </button>
 
-                {!forgotSent ? (
-                  <form onSubmit={handleForgotSubmit} noValidate>
-                    <div className="text-center mb-6">
+                <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
+                  <div
+                    style={{
+                      width: 56,
+                      height: 56,
+                      borderRadius: 14,
+                      margin: "0 auto 0.75rem",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "1.6rem",
+                      background: "color-mix(in srgb, var(--accent) 10%, transparent)",
+                      border: "1px solid color-mix(in srgb, var(--accent) 24%, transparent)",
+                    }}
+                  >
+                    📧
+                  </div>
+                  <h3 style={{ fontWeight: 700, fontSize: "1.1rem", color: "var(--text-primary)", marginBottom: "0.35rem" }}>
+                    Check Your Email
+                  </h3>
+                  <p style={{ fontSize: "0.84rem", color: "var(--text-secondary)" }}>
+                    Enter the 6-digit code sent to <strong>{verificationEmail || "your email"}</strong>.
+                  </p>
+                </div>
+
+                {error && <Alert type="error" message={error} />}
+                {success && <Alert type="success" message={success} />}
+
+                <FormGroup label="Email Address">
+                  <input
+                    type="email"
+                    className="c-input"
+                    placeholder="you@example.com"
+                    value={verificationEmail}
+                    onChange={(e) => setVerificationEmail(e.target.value)}
+                    required
+                  />
+                </FormGroup>
+
+                <FormGroup label="Verification Code">
+                  <input
+                    type="text"
+                    className="c-input"
+                    placeholder="123456"
+                    value={verificationCode}
+                    onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ""))}
+                    maxLength={6}
+                    inputMode="numeric"
+                    required
+                  />
+                </FormGroup>
+
+                <SubmitButton disabled={submitting}>
+                  {submitting && <Loader2 size={15} className="animate-spin" />}
+                  {submitting ? "Verifying…" : "Verify Email →"}
+                </SubmitButton>
+
+                <p style={{ textAlign: "center", marginTop: "0.85rem", fontSize: "0.8rem" }}>
+                  Didn&apos;t receive it?{" "}
+                  <button type="button" className="link-btn" style={{ fontSize: "0.8rem" }} onClick={handleResendVerification}>
+                    Send a new code
+                  </button>
+                </p>
+              </form>
+            )}
+
+            {view === "forgotPassword" && (
+              <div>
+                <button
+                  type="button"
+                  className="link-btn"
+                  style={{ fontSize: "0.82rem", color: "var(--text-secondary)", marginBottom: "1.25rem", display: "block" }}
+                  onClick={() => switchView("signin")}
+                >
+                  ← Back to Sign In
+                </button>
+
+                {resetStep === "request" ? (
+                  <form onSubmit={handleForgotPassword} noValidate>
+                    <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
                       <div
-                        className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3 text-2xl"
-                        style={{ background: "color-mix(in srgb, var(--accent-primary, #f5ab20) 10%, transparent)", border: "1px solid color-mix(in srgb, var(--accent-primary, #f5ab20) 24%, transparent)" }}
+                        style={{
+                          width: 56,
+                          height: 56,
+                          borderRadius: 14,
+                          margin: "0 auto 0.75rem",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "1.6rem",
+                          background: "color-mix(in srgb, var(--accent) 10%, transparent)",
+                          border: "1px solid color-mix(in srgb, var(--accent) 24%, transparent)",
+                        }}
                       >
                         🔑
                       </div>
-                      <h3 className="font-bold text-lg mb-1" style={{ color: "var(--text-primary, white)" }}>Forgot Password?</h3>
-                      <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary, #8ca5bc)" }}>
-                        Enter your email and we'll send you a reset link.
+                      <h3 style={{ fontWeight: 700, fontSize: "1.1rem", color: "var(--text-primary)", marginBottom: "0.35rem" }}>
+                        Forgot Password?
+                      </h3>
+                      <p style={{ fontSize: "0.84rem", color: "var(--text-secondary)" }}>
+                        Enter your email and we&apos;ll send a reset code.
                       </p>
                     </div>
 
-                    {error   && <div className="alert-msg alert-error">{error}</div>}
-                    {success && <div className="alert-msg alert-success">{success}</div>}
+                    {error && <Alert type="error" message={error} />}
+                    {success && <Alert type="success" message={success} />}
 
                     <FormGroup label="Email Address">
                       <input
                         type="email"
-                        className="modal-input"
+                        className="c-input"
                         placeholder="you@example.com"
                         value={forgotEmail}
-                        onChange={(e) => setForgotEmail(e.target.value)}
+                        onChange={(e) => {
+                          setForgotEmail(e.target.value);
+                          setError("");
+                        }}
                         required
                       />
                     </FormGroup>
 
-                    <SubmitButton disabled={isSubmitting}>
-                      {isSubmitting ? "Sending…" : "Send Reset Link →"}
+                    <SubmitButton disabled={submitting}>
+                      {submitting && <Loader2 size={15} className="animate-spin" />}
+                      {submitting ? "Sending…" : "Send Reset Code →"}
                     </SubmitButton>
                   </form>
                 ) : (
-                  <div className="text-center py-6">
-                    <div className="text-5xl mb-4">📬</div>
-                    <h3 className="font-bold text-lg mb-2" style={{ color: "var(--text-primary, white)" }}>Check Your Email</h3>
-                    <p className="text-sm mb-6 leading-relaxed" style={{ color: "var(--text-secondary, #8ca5bc)" }}>
-                      A reset link was sent to{" "}
-                      <span className="font-semibold" style={{ color: "var(--accent-primary, #f5ab20)" }}>
-                        {forgotEmail}
-                      </span>
-                      <br />
-                      <span className="text-xs opacity-70">(Simulated — no real email in demo)</span>
+                  <form onSubmit={handleResetPassword} noValidate>
+                    <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
+                      <div
+                        style={{
+                          width: 56,
+                          height: 56,
+                          borderRadius: 14,
+                          margin: "0 auto 0.75rem",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "1.6rem",
+                          background: "color-mix(in srgb, var(--accent) 10%, transparent)",
+                          border: "1px solid color-mix(in srgb, var(--accent) 24%, transparent)",
+                        }}
+                      >
+                        📬
+                      </div>
+                      <h3 style={{ fontWeight: 700, fontSize: "1.1rem", color: "var(--text-primary)", marginBottom: "0.35rem" }}>
+                        Reset Password
+                      </h3>
+                      <p style={{ fontSize: "0.84rem", color: "var(--text-secondary)" }}>
+                        Code sent to <strong>{forgotEmail}</strong>
+                      </p>
+                    </div>
+
+                    {error && <Alert type="error" message={error} />}
+                    {success && <Alert type="success" message={success} />}
+
+                    <FormGroup label="Reset Code">
+                      <input
+                        type="text"
+                        className="c-input"
+                        placeholder="Enter 6-digit code"
+                        value={resetCode}
+                        onChange={(e) => {
+                          setResetCode(e.target.value.replace(/\D/g, ""));
+                          setError("");
+                        }}
+                        maxLength={6}
+                        inputMode="numeric"
+                        required
+                      />
+                    </FormGroup>
+
+                    <FormGroup label="New Password" helper={PASSWORD_HELPER}>
+                      <PasswordInput
+                        placeholder="Create new password"
+                        value={newPassword}
+                        onChange={(e) => {
+                          setNewPassword(e.target.value);
+                          setError("");
+                        }}
+                        required
+                      />
+                    </FormGroup>
+
+                    <FormGroup label="Confirm New Password">
+                      <PasswordInput
+                        placeholder="Confirm new password"
+                        value={confirmPassword}
+                        onChange={(e) => {
+                          setConfirmPassword(e.target.value);
+                          setError("");
+                        }}
+                        required
+                      />
+                    </FormGroup>
+
+                    <SubmitButton disabled={submitting}>
+                      {submitting && <Loader2 size={15} className="animate-spin" />}
+                      {submitting ? "Resetting…" : "Reset Password →"}
+                    </SubmitButton>
+
+                    <p style={{ textAlign: "center", marginTop: "0.85rem", fontSize: "0.8rem" }}>
+                      <button
+                        type="button"
+                        className="link-btn"
+                        style={{ fontSize: "0.8rem" }}
+                        onClick={() => {
+                          setResetStep("request");
+                          setError("");
+                          setSuccess("");
+                        }}
+                      >
+                        Request a new code
+                      </button>
                     </p>
-                    <button
-                      type="button"
-                      onClick={() => { setForgotSent(false); switchView("signin"); }}
-                      className="text-sm font-semibold underline bg-transparent border-none cursor-pointer hover:opacity-80 transition-opacity"
-                      style={{ color: "var(--accent-primary, #f5ab20)" }}
-                    >
-                      Back to Sign In
-                    </button>
-                  </div>
+                  </form>
                 )}
               </div>
             )}
@@ -597,29 +947,5 @@ export default function AuthCard({ defaultTab }: AuthCardProps) {
         </div>
       </div>
     </>
-  );
-}
-
-function FormGroup({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex flex-col gap-1.5 mb-4 flex-1">
-      <label className="text-[0.76rem] font-semibold tracking-wide" style={{ color: "var(--text-secondary, #8ca5bc)" }}>
-        {label}
-      </label>
-      {children}
-    </div>
-  );
-}
-
-function SubmitButton({ children, disabled }: { children: React.ReactNode; disabled?: boolean }) {
-  return (
-    <button
-      type="submit"
-      disabled={disabled}
-      className="w-full py-3 rounded-full text-[0.92rem] font-bold border-none cursor-pointer transition-all duration-200 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
-      style={{ background: "var(--accent-primary, #f5ab20)", color: "#ffffff", boxShadow: "0 8px 24px color-mix(in srgb, var(--accent-primary, #f5ab20) 25%, transparent)" }}
-    >
-      {children}
-    </button>
   );
 }

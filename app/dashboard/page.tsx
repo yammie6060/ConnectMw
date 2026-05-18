@@ -39,13 +39,18 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    const session = getSession();
-    if (!session) {
-      router.replace("/");
-      return;
-    }
-    setUser(session);
-    setLoaded(true);
+    // Add a small delay to ensure session is properly loaded
+    const checkSession = () => {
+      const session = getSession();
+      if (!session) {
+        router.replace("/signin");
+        return;
+      }
+      setUser(session);
+      setLoaded(true);
+    };
+    
+    checkSession();
   }, [router]);
 
   const requestLogout = () => {
@@ -56,7 +61,7 @@ export default function DashboardPage() {
 
   const confirmLogout = () => {
     clearSession();
-    router.push("/");
+    router.push("/signin");
   };
 
   const navigate = useCallback((id: string) => {
