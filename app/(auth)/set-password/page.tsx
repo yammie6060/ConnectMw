@@ -37,7 +37,7 @@ export default function SetPasswordPage() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center px-4" style={{ background: "#0d1f2d", color: "#fff" }}>
+    <main className="py-5 flex items-center justify-center px-4" style={{ background: "#0d1f2d", color: "#fff" }}>
       <form onSubmit={submit} className="w-full max-w-md rounded-2xl p-6" style={{ background: "#132333", border: "1px solid rgba(255,255,255,0.1)" }}>
         <h1 className="text-2xl font-black mb-2">Set New Password</h1>
         <p className="text-sm mb-5" style={{ color: "#8ca5bc" }}>Your temporary staff password must be changed before using the dashboard.</p>
