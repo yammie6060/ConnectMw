@@ -15,6 +15,7 @@ interface TopBarProps {
   activeItem: string;
   onToggleTheme: () => void;
   onSwitchNavMode: (mode: NavMode) => void;
+  onSwitchWorkspace: (role: string, providerId: string | null) => void;
   onOpenMobileSidebar: () => void;
   onNavigate: (id: string) => void;
   onLogout: () => void;
@@ -35,6 +36,7 @@ export function TopBar({
   activeItem,
   onToggleTheme,
   onSwitchNavMode,
+  onSwitchWorkspace,
   onOpenMobileSidebar,
   onNavigate,
   onLogout,
@@ -128,6 +130,7 @@ export function TopBar({
             onNavigate={onNavigate}
             onToggleTheme={onToggleTheme}
             onSwitchNavMode={onSwitchNavMode}
+            onSwitchWorkspace={onSwitchWorkspace}
             onLogout={onLogout}
           />
         </div>

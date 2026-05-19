@@ -19,6 +19,7 @@ import { BillingPage } from '../pages/BillingPage';
 import { PrivacyPage } from '../pages/PrivacyPage';
 import { HelpPage } from '../pages/HelpPage';
 import { NotificationsPage } from '../pages/NotificationsPage';
+import { AdminManagementPage } from '../pages/AdminManagementPage';
 
 // Create a cache to store component instances with their state
 const pageCache = new Map<string, ReactElement>();
@@ -35,13 +36,14 @@ export function renderPage(
   navItems: NavItem[],
   setActiveItem: (id: string) => void,
   isDarkMode: boolean,
-  toggleTheme: () => void
+  toggleTheme: () => void,
+  onSessionRefresh?: () => void
 ): ReactElement {
   const { color } = meta;
   const role = user.role;
 
   // Create a unique key for this page instance
-  const cacheKey = `${activeItem}-${user.id}-${isDarkMode}`;
+  const cacheKey = `${activeItem}-${user.id}-${user.role}-${user.fullName}-${isDarkMode}`;
 
   // Check if we already have this component instance cached
   if (pageCache.has(cacheKey)) {
@@ -51,22 +53,50 @@ export function renderPage(
   let component: ReactElement;
 
   switch (activeItem) {
+    case "admin":
+    case "admin-users":
+    case "admin-staff":
+    case "admin-providers":
+    case "admin-support":
+    case "admin-payments":
+    case "admin-reviews":
+      component = ["admin", "support"].includes(role)
+        ? (
+          <AdminManagementPage
+            color={color}
+            canManageRoles={user.roles.includes("admin")}
+            initialTab={
+              activeItem === "admin-users" ? "users"
+              : activeItem === "admin-staff" ? "staff"
+              : activeItem === "admin-providers" ? "providers"
+              : activeItem === "admin-support" ? "support"
+              : activeItem === "admin-payments" ? "payments"
+              : activeItem === "admin-reviews" ? "reviews"
+              : "overview"
+            }
+          />
+        )
+        : <OverviewPage user={user} meta={meta} navItems={navItems} setActiveItem={setActiveItem} />;
+      break;
+
     case "overview":    
-      component = <OverviewPage user={user} meta={meta} navItems={navItems} setActiveItem={setActiveItem} />;
+      component = ["admin", "support"].includes(role)
+        ? <AdminManagementPage color={color} canManageRoles={user.roles.includes("admin")} />
+        : <OverviewPage user={user} meta={meta} navItems={navItems} setActiveItem={setActiveItem} />;
       break;
 
     // Spare Seller
     case "inventory":   
-      component = role === "spareSeller"
-        ? <InventoryPage color={color} role={role} />
+      component = role === "spareSeller" || ["admin", "support"].includes(role)
+        ? <InventoryPage color={color} role="spareSeller" user={user} onNavigate={setActiveItem} />
         : <OverviewPage user={user} meta={meta} navItems={navItems} setActiveItem={setActiveItem} />;
       break;
     case "enquiries":   
       component = <EnquiriesPage color={color} />;
       break;
     case "add":         
-      component = role === "spareSeller"
-        ? <AddPartPage color={color} />
+      component = role === "spareSeller" || ["admin", "support"].includes(role)
+        ? <AddPartPage color={color} user={user} />
         : <OverviewPage user={user} meta={meta} navItems={navItems} setActiveItem={setActiveItem} />;
       break;
     case "analytics":   
@@ -75,13 +105,13 @@ export function renderPage(
 
     // Landlord
     case "listings":    
-      component = role === "landlord"
-        ? <InventoryPage color={color} role={role} />
+      component = role === "landlord" || role === "agent" || ["admin", "support"].includes(role)
+        ? <InventoryPage color={color} role={["admin", "support"].includes(role) ? "landlord" : role} user={user} onNavigate={setActiveItem} />
         : <OverviewPage user={user} meta={meta} navItems={navItems} setActiveItem={setActiveItem} />;
       break;
     case "upload":
-      component = role === "landlord"
-        ? <AddPropertyPage color={color} />
+      component = role === "landlord" || role === "agent" || ["admin", "support"].includes(role)
+        ? <AddPropertyPage color={color} user={user} />
         : <OverviewPage user={user} meta={meta} navItems={navItems} setActiveItem={setActiveItem} />;
       break;
     case "calendar":    
@@ -93,8 +123,8 @@ export function renderPage(
       component = <CalendarPage color={color} role={role} />;
       break;
     case "portfolio":   
-      component = role === "beautyProvider"
-        ? <PortfolioPage color={color} />
+      component = role === "beautyProvider" || ["admin", "support"].includes(role)
+        ? <PortfolioPage color={color} user={user} />
         : <OverviewPage user={user} meta={meta} navItems={navItems} setActiveItem={setActiveItem} />;
       break;
 
@@ -119,8 +149,8 @@ export function renderPage(
       component = <RentalsPage color={color} />;   
       break;
     case "add-service":
-      component = role === "beautyProvider"
-        ? <PortfolioPage color={color} initialShowAdd />
+      component = role === "beautyProvider" || ["admin", "support"].includes(role)
+        ? <PortfolioPage color={color} user={user} initialShowAdd />
         : <OverviewPage user={user} meta={meta} navItems={navItems} setActiveItem={setActiveItem} />;
       break;
 
@@ -137,7 +167,7 @@ export function renderPage(
 
     // Profile menu
     case "profile":     
-      component = <ProfilePage color={color} user={user} meta={meta} />;
+      component = <ProfilePage color={color} user={user} meta={meta} onSessionRefresh={onSessionRefresh} />;
       break;
     case "billing":     
       component = <BillingPage color={color} user={user} />;

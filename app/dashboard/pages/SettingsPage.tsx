@@ -53,7 +53,7 @@ export function SettingsPage({ color, user, isDarkMode, toggleTheme, onNavigate 
           action={<span className="text-xs font-semibold px-3 py-1.5 rounded-lg" style={{ background: `${color}18`, color }}><Edit2 size={11} /></span>} />
         <Row icon={Mail} label="Email" sub={user.email}
           action={<ChevronRight size={14} style={{ color: "#8ca5bc" }} />} />
-        <Row icon={Phone} label="Phone" sub="+265 999 123 456"
+        <Row icon={Phone} label="Phone" sub={user.phone || "Not set"}
           action={<ChevronRight size={14} style={{ color: "#8ca5bc" }} />} />
         <Row icon={Lock} label="Change Password" sub="Last changed 3 months ago"
           action={<ChevronRight size={14} style={{ color: "#8ca5bc" }} />} />

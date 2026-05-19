@@ -2,6 +2,7 @@
 
 import { ChevronLeft, LogOut, X } from 'lucide-react';
 import { NavItem, RoleMeta, SessionUser } from '../types/dashboard';
+import { DashboardAvatar } from './DashboardAvatar';
 
 interface SidebarProps {
   navMode: string;
@@ -84,10 +85,7 @@ export function Sidebar({
 
           <div className={`p-3 border-b border-white/5 ${sidebarCollapsed ? "text-center" : ""}`}>
             <div className={`flex ${sidebarCollapsed ? "flex-col" : "items-center gap-3"}`}>
-              <div className="w-9 h-9 rounded-full flex items-center justify-center font-black text-sm flex-shrink-0 mx-auto"
-                style={{ background: "linear-gradient(135deg, #1b4f6a, #f5ab20)", color: "#0d1f2d" }}>
-                {user.firstName[0]}{user.lastName[0]}
-              </div>
+              <DashboardAvatar user={user} size="sm" className="mx-auto" />
               {!sidebarCollapsed && (
                 <div className="min-w-0 flex-1">
                   <div className="text-sm font-semibold truncate" style={{ color: "var(--text-primary, white)" }}>{user.firstName} {user.lastName}</div>

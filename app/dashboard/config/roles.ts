@@ -1,7 +1,29 @@
-import { User, Home, Sparkles, Car, Calendar, MessageSquare, Package, Star, TrendingUp } from 'lucide-react';
+import { User, Home, Sparkles, Car, Calendar, MessageSquare, Package, Star, TrendingUp, Shield, Headphones } from 'lucide-react';
 import { RoleMeta } from '../types/dashboard';
 
 export const ROLE_META: Record<string, RoleMeta> = {
+  admin: {
+    label: "Admin", color: "#38bdf8", icon: Shield,
+    greeting: "Monitor users, providers, and platform trust.",
+    statCards: [
+      { label: "Users", value: "0", icon: User },
+      { label: "Pending Providers", value: "0", icon: Shield },
+      { label: "Reviews", value: "0", icon: Star },
+      { label: "Support Items", value: "0", icon: Headphones },
+    ],
+    recentItems: [],
+  },
+  support: {
+    label: "Support", color: "#38bdf8", icon: Headphones,
+    greeting: "Help users and review provider onboarding.",
+    statCards: [
+      { label: "Users", value: "0", icon: User },
+      { label: "Pending Providers", value: "0", icon: Shield },
+      { label: "Reviews", value: "0", icon: Star },
+      { label: "Tickets", value: "0", icon: MessageSquare },
+    ],
+    recentItems: [],
+  },
   customer: {
     label: "Customer", color: "#f5ab20", icon: User,
     greeting: "What are you looking for today?",
@@ -30,6 +52,21 @@ export const ROLE_META: Record<string, RoleMeta> = {
       { title: "3-Bed House, Area 47",         sub: "2 new enquiries",        badge: "Available", badgeColor: "#10b981" },
       { title: "Studio Apt, Area 3",             sub: "Occupied · Lease ends Jun", badge: "Occupied", badgeColor: "#8ca5bc" },
       { title: "Student Hostel Room, Chichiri",  sub: "1 new enquiry",          badge: "Available", badgeColor: "#10b981" },
+    ],
+  },
+  agent: {
+    label: "Agent", color: "#f5ab20", icon: Home,
+    greeting: "Manage your listings and client enquiries.",
+    statCards: [
+      { label: "Active Listings", value: "6",     icon: Home,          delta: "3 available" },
+      { label: "Enquiries",       value: "9",     icon: MessageSquare, delta: "+4 today" },
+      { label: "Viewings",        value: "5",     icon: Calendar },
+      { label: "Revenue",         value: "K240K", icon: Package,       delta: "this month" },
+    ],
+    recentItems: [
+      { title: "Townhouse, Area 10",        sub: "Viewing requested",       badge: "Lead", badgeColor: "#10b981" },
+      { title: "Office Space, City Centre", sub: "Contract draft pending",  badge: "Deal", badgeColor: "#f5ab20" },
+      { title: "2-Bed Flat, Namiwawa",      sub: "1 new enquiry",           badge: "Available", badgeColor: "#10b981" },
     ],
   },
   beautyProvider: {

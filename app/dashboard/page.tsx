@@ -13,7 +13,28 @@ import { DashboardTour } from "./components/DashboardTour";
 import { LogoutConfirmModal } from "./components/LogoutConfirmModal";
 import { useNavMode } from "./hooks/useNavMode";
 import { SessionUser } from "./types/dashboard";
-import { clearSession, getSession } from "@/lib/auth";
+import { clearSession, getSession, setActiveWorkspace } from "@/lib/auth";
+import { authService } from "@/services/auth.service";
+
+const ACTIVE_PAGE_KEY = "connectmw_dashboard_active_item";
+
+function defaultPageForRole(role: string) {
+  return ["admin", "support"].includes(role) ? "admin" : "overview";
+}
+
+function pageKeyForRole(role: string) {
+  return `${ACTIVE_PAGE_KEY}:${role}`;
+}
+
+function getSavedActivePage(role: string) {
+  if (typeof window === "undefined") return defaultPageForRole(role);
+  return window.localStorage.getItem(pageKeyForRole(role)) || defaultPageForRole(role);
+}
+
+function setSavedActivePage(role: string, item: string) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(pageKeyForRole(role), item);
+}
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -40,13 +61,19 @@ export default function DashboardPage() {
 
   useEffect(() => {
     // Add a small delay to ensure session is properly loaded
-    const checkSession = () => {
+    const checkSession = async () => {
+      await authService.refreshSession().catch(() => null);
       const session = getSession();
       if (!session) {
         router.replace("/signin");
         return;
       }
+      if (session.mustChangePassword) {
+        router.replace("/set-password");
+        return;
+      }
       setUser(session);
+      setActiveItem(getSavedActivePage(session.role));
       setLoaded(true);
     };
     
@@ -65,9 +92,32 @@ export default function DashboardPage() {
   };
 
   const navigate = useCallback((id: string) => {
+    if (user) {
+      setSavedActivePage(user.role, id);
+    }
     setActiveItem(id);
     setShowUserMenu(false);
     setMobileSidebarOpen(false);
+  }, [user]);
+
+  const switchWorkspace = useCallback((role: string, providerId: string | null) => {
+    setActiveWorkspace(role, providerId);
+    const session = getSession();
+    if (session) {
+      setUser(session);
+      const defaultPage = defaultPageForRole(session.role);
+      setSavedActivePage(session.role, defaultPage);
+      setActiveItem(defaultPage);
+    }
+    setShowUserMenu(false);
+    setMobileSidebarOpen(false);
+  }, []);
+
+  const refreshSession = useCallback(() => {
+    const session = getSession();
+    if (session) {
+      setUser(session);
+    }
   }, []);
 
   const showProfileMenu = useCallback(() => {
@@ -178,6 +228,7 @@ export default function DashboardPage() {
           activeItem={activeItem}
           onToggleTheme={toggleTheme}
           onSwitchNavMode={switchNavMode}
+          onSwitchWorkspace={switchWorkspace}
           onOpenMobileSidebar={() => setMobileSidebarOpen(true)}
           onNavigate={navigate}
           onLogout={requestLogout}
@@ -208,7 +259,7 @@ export default function DashboardPage() {
         {/* Main Content Area */}
         <main className={`min-h-screen pt-[60px] ${navMode === "bottom" ? "pb-[88px]" : "pb-8"} px-4 sm:px-6 lg:px-8`}
           style={{ maxWidth: "1240px", margin: "0 auto", width: "100%" }}>
-          {renderPage(activeItem, user, meta, navItems, navigate, isDarkMode, toggleTheme)}
+          {renderPage(activeItem, user, meta, navItems, navigate, isDarkMode, toggleTheme, refreshSession)}
         </main>
 
         {/* Bottom Navigation */}

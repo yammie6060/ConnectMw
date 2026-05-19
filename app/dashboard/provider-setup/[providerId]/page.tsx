@@ -372,6 +372,9 @@ export default function ProviderSetupPage() {
 
   const pt = profileData?.provider.provider_type;
   const fee = pt?.verification_fee ?? 0;
+  const verificationStatus = profileData?.provider.verification_status ?? "pending";
+  const isApproved = verificationStatus === "approved";
+  const isRejected = verificationStatus === "rejected";
   const steps: Step[] = ["profile", "hours", "documents", "done"];
 
   return (
@@ -743,28 +746,32 @@ export default function ProviderSetupPage() {
         {/* DONE */}
         {step === "done" && (
           <div style={{ textAlign: "center", padding: "clamp(0.5rem, 3vw, 1rem) 0 0.5rem" }}>
-            <div style={{ fontSize: "clamp(2rem, 8vw, 3rem)", marginBottom: "1rem" }}>🎉</div>
+            <div style={{ fontSize: "clamp(2rem, 8vw, 3rem)", marginBottom: "1rem" }}>{isRejected ? "!" : "✓"}</div>
             <h2 style={{ 
               fontWeight: 800, 
               fontSize: "clamp(1rem, 5vw, 1.3rem)", 
               color: "var(--text-primary)", 
               marginBottom: "0.5rem" 
             }}>
-              You&apos;re All Set!
+              {isApproved ? "Provider Approved" : isRejected ? "Review Needs Attention" : "You're All Set!"}
             </h2>
             <p style={{ 
               fontSize: "clamp(0.8rem, 3vw, 0.875rem)", 
               color: "var(--text-secondary)", 
               marginBottom: "0.5rem" 
             }}>
-              Your application is <strong style={{ color: "var(--accent)" }}>pending review</strong>.
+              Your application is <strong style={{ color: "var(--accent)" }}>{verificationStatus.replace("_", " ")}</strong>.
             </p>
             <p style={{ 
               fontSize: "clamp(0.75rem, 3vw, 0.82rem)", 
               color: "var(--text-secondary)", 
               marginBottom: "clamp(1.5rem, 5vw, 2rem)" 
             }}>
-              We&ll notify you by email once approved — usually within 1–2 business days.
+              {isApproved
+                ? "You can now use your provider workspace and publish services."
+                : isRejected
+                  ? "Please contact support or update your details before submitting again."
+                  : "We'll notify you by email once approved, usually within 1-2 business days."}
             </p>
             <PrimaryBtn onClick={() => router.push("/dashboard")}>
               Go to Dashboard →

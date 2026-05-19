@@ -2,6 +2,8 @@ const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ||
   "http://localhost:8000";
 
+export { API_BASE_URL };
+
 export type ApiResponse<TData = Record<string, unknown>> = {
   success: boolean;
   message: string;
@@ -61,6 +63,14 @@ export async function apiRequest<TData>(
   const data = await response.json().catch(() => null);
 
   if (!response.ok) {
+    if (response.status === 401 && typeof window !== "undefined") {
+      window.localStorage.removeItem("connectmw_access_token");
+      window.localStorage.removeItem("connectmw_auth_user");
+      window.localStorage.removeItem("connectmw_active_workspace");
+      if (!window.location.pathname.includes("/signin")) {
+        window.location.assign("/signin");
+      }
+    }
     throw new ApiError(
       getErrorMessage(data, "Request failed. Please try again."),
       response.status,
@@ -70,4 +80,3 @@ export async function apiRequest<TData>(
 
   return data as ApiResponse<TData>;
 }
-

@@ -319,14 +319,14 @@ export default function AuthCard({ defaultTab = "signin", onAuthenticated }: Aut
     setSuccess("");
 
     try {
-      await authService.login({
+      const res = await authService.login({
         email: signin.email.trim(),
         password: signin.password,
       });
       setSuccess("Welcome back! Redirecting…");
       onAuthenticated?.();
       setTimeout(() => {
-        router.push("/dashboard");
+        router.push(res.data?.must_change_password ? "/set-password" : "/dashboard");
         router.refresh();
       }, 700);
     } catch (err) {

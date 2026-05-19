@@ -1,5 +1,6 @@
-import { UserCircle, CreditCard, Shield, HelpCircle, Sun, Moon, PanelLeft, PanelBottom, LogOut } from 'lucide-react';
+import { UserCircle, CreditCard, Shield, HelpCircle, Sun, Moon, PanelLeft, PanelBottom, LogOut, Check, BriefcaseBusiness } from 'lucide-react';
 import { NavItem, RoleMeta, SessionUser, NavMode } from '../types/dashboard';
+import { DashboardAvatar } from './DashboardAvatar';
 
 interface UserMenuProps {
   user: SessionUser;
@@ -14,6 +15,7 @@ interface UserMenuProps {
   onNavigate: (id: string) => void;
   onToggleTheme: () => void;
   onSwitchNavMode: (mode: NavMode) => void;
+  onSwitchWorkspace: (role: string, providerId: string | null) => void;
   onLogout: () => void;
 }
 
@@ -30,6 +32,7 @@ export function UserMenu({
   onNavigate,
   onToggleTheme,
   onSwitchNavMode,
+  onSwitchWorkspace,
   onLogout
 }: UserMenuProps) {
   const RoleIcon = meta.icon;
@@ -40,9 +43,7 @@ export function UserMenu({
       <button onClick={() => setShowUserMenu(!showUserMenu)}
         className="flex items-center gap-2 w-9 h-9 rounded-full transition-all cursor-pointer"
         style={{ background: "linear-gradient(135deg, #1b4f6a, #f5ab20)" }}>
-        <div className="w-full h-full rounded-full flex items-center justify-center font-black text-sm text-[#0d1f2d]">
-          {user.firstName[0]}{user.lastName[0]}
-        </div>
+        <DashboardAvatar user={user} size="sm" className="w-full h-full" />
       </button>
 
       {showUserMenu && (
@@ -51,10 +52,7 @@ export function UserMenu({
           
           <div className="p-4 border-b border-white/10">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full flex items-center justify-center font-black text-sm"
-                style={{ background: "linear-gradient(135deg, #1b4f6a, #f5ab20)", color: "#0d1f2d" }}>
-                {user.firstName[0]}{user.lastName[0]}
-              </div>
+              <DashboardAvatar user={user} size="md" />
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-semibold truncate" style={{ color: "var(--text-primary, white)" }}>{user.firstName} {user.lastName}</div>
                 <div className="text-[11px] truncate" style={{ color: "var(--text-secondary, #8ca5bc)" }}>{user.email}</div>
@@ -67,6 +65,59 @@ export function UserMenu({
           </div>
 
           <div className="py-2">
+            {user.canSwitchRoles && (
+              <div className="px-4 py-2 border-b border-white/10 mb-2">
+                <div className="text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--text-secondary, #8ca5bc)" }}>Workspace</div>
+                <div className="space-y-1">
+                  {user.roles.includes("admin") && (
+                    <button
+                      onClick={() => onSwitchWorkspace("admin", null)}
+                      className="w-full flex items-center gap-3 px-2 py-2 rounded-lg text-sm transition-colors hover:bg-white/5"
+                      style={user.activeRole === "admin" ? { color, background: `${color}14` } : { color: "var(--text-secondary, #8ca5bc)" }}
+                    >
+                      <Shield size={16} />
+                      <span className="flex-1 text-left">Admin Console</span>
+                      {user.activeRole === "admin" && <Check size={14} />}
+                    </button>
+                  )}
+                  {!user.roles.includes("admin") && user.roles.includes("support") && (
+                    <button
+                      onClick={() => onSwitchWorkspace("support", null)}
+                      className="w-full flex items-center gap-3 px-2 py-2 rounded-lg text-sm transition-colors hover:bg-white/5"
+                      style={user.activeRole === "support" ? { color, background: `${color}14` } : { color: "var(--text-secondary, #8ca5bc)" }}
+                    >
+                      <HelpCircle size={16} />
+                      <span className="flex-1 text-left">Support Desk</span>
+                      {user.activeRole === "support" && <Check size={14} />}
+                    </button>
+                  )}
+                  <button
+                    onClick={() => onSwitchWorkspace("customer", null)}
+                    className="w-full flex items-center gap-3 px-2 py-2 rounded-lg text-sm transition-colors hover:bg-white/5"
+                    style={user.activeRole === "customer" ? { color, background: `${color}14` } : { color: "var(--text-secondary, #8ca5bc)" }}
+                  >
+                    <UserCircle size={16} />
+                    <span className="flex-1 text-left">Customer</span>
+                    {user.activeRole === "customer" && <Check size={14} />}
+                  </button>
+                  {user.providers.map((provider) => (
+                    <button
+                      key={provider.id}
+                      onClick={() => onSwitchWorkspace(provider.role, provider.id)}
+                      className="w-full flex items-center gap-3 px-2 py-2 rounded-lg text-sm transition-colors hover:bg-white/5"
+                      style={user.activeProviderId === provider.id ? { color, background: `${color}14` } : { color: "var(--text-secondary, #8ca5bc)" }}
+                    >
+                      <BriefcaseBusiness size={16} />
+                      <span className="flex-1 min-w-0 text-left">
+                        <span className="block truncate">{provider.business_name || provider.display_name || "Provider"}</span>
+                        <span className="block text-[10px] opacity-75 truncate">{provider.verification_status}</span>
+                      </span>
+                      {user.activeProviderId === provider.id && <Check size={14} />}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <button onClick={() => onNavigate("profile")} className="w-full flex items-center gap-3 px-4 py-2 text-sm transition-colors hover:bg-white/5" style={{ color: "var(--text-secondary, #8ca5bc)" }}>
               <UserCircle size={16} /> Profile Settings
             </button>

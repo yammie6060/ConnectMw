@@ -1,8 +1,7 @@
-// services/auth.service.ts
 import { apiRequest } from "./api";
 
 const ACCESS_TOKEN_KEY = "connectmw_access_token";
-const AUTH_USER_KEY = "connectmw_auth_user";
+const AUTH_USER_KEY    = "connectmw_auth_user";
 
 export type RegisterPayload = {
   email: string;
@@ -24,6 +23,12 @@ export type AuthUser = {
   phone: string;
   is_verified: boolean;
   is_active: boolean;
+  /**
+   * True when a staff account was created by an admin and the user has not yet
+   * replaced the system-generated temporary password.  The app should redirect
+   * to /set-password immediately after login when this is true.
+   */
+  must_change_password: boolean;
   roles: string[];
   providers: Array<{
     id: string;
@@ -55,6 +60,8 @@ export type LoginData = {
   access_token: string;
   token_type: "bearer";
   expires_in: number;
+  /** Mirrored from user.must_change_password for convenient top-level access. */
+  must_change_password: boolean;
   user: AuthUser;
   profile: UserProfile | null;
 };
@@ -89,7 +96,19 @@ function canUseStorage(): boolean {
 
 export function getToken(): string | null {
   if (!canUseStorage()) return null;
-  return window.localStorage.getItem(ACCESS_TOKEN_KEY);
+  const token = window.localStorage.getItem(ACCESS_TOKEN_KEY);
+  if (!token) return null;
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1] ?? ""));
+    if (payload.exp && payload.exp * 1000 <= Date.now()) {
+      clearSession();
+      return null;
+    }
+  } catch {
+    clearSession();
+    return null;
+  }
+  return token;
 }
 
 export function getSession(): SessionData | null {
@@ -114,8 +133,23 @@ function setSession(data: LoginData): void {
   window.localStorage.setItem(ACCESS_TOKEN_KEY, data.access_token);
   window.localStorage.setItem(
     AUTH_USER_KEY,
-    JSON.stringify({ user: data.user, profile: data.profile } satisfies SessionData)
+    JSON.stringify({ user: data.user, profile: data.profile } satisfies SessionData),
   );
+}
+
+function updateStoredProfile(profile: UserProfile): void {
+  if (!canUseStorage()) return;
+  const current = getSession();
+  if (!current) return;
+  window.localStorage.setItem(
+    AUTH_USER_KEY,
+    JSON.stringify({ ...current, profile } satisfies SessionData),
+  );
+}
+
+function setSessionData(data: SessionData): void {
+  if (!canUseStorage()) return;
+  window.localStorage.setItem(AUTH_USER_KEY, JSON.stringify(data));
 }
 
 export const authService = {
@@ -169,12 +203,69 @@ export const authService = {
     });
   },
 
+  /**
+   * Called by a new staff member on first login to replace their
+   * system-generated temporary password.  Does not require the old password.
+   */
+  async setNewPassword(userId: string, newPassword: string, confirmPassword: string) {
+    const token = getToken();
+    const response = await apiRequest<AuthUser>(`/users/staff/${userId}/set-password`, {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: JSON.stringify({ new_password: newPassword, confirm_password: confirmPassword }),
+    });
+    if (response.data) {
+      const current = getSession();
+      if (current) {
+        window.localStorage.setItem(
+          AUTH_USER_KEY,
+          JSON.stringify({ ...current, user: response.data } satisfies SessionData),
+        );
+      }
+    }
+    return response;
+  },
+
   async me() {
     const token = getToken();
     return apiRequest<{ user: AuthUser; profile: UserProfile | null }>("/auth/me", {
       method: "GET",
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
+  },
+
+  async refreshSession() {
+    const response = await this.me();
+    if (response.data) {
+      setSessionData(response.data);
+    }
+    return response;
+  },
+
+  async updateProfile(
+    payload: Partial<{
+      full_name: string;
+      avatar_url: string | null;
+      gender: string | null;
+      date_of_birth: string | null;
+      city: string | null;
+      district: string | null;
+      street_address: string | null;
+      nationality: string | null;
+      preferred_language: string | null;
+      bio: string | null;
+    }>,
+  ) {
+    const token = getToken();
+    const response = await apiRequest<{ profile: UserProfile }>("/auth/profile", {
+      method: "PUT",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: JSON.stringify(payload),
+    });
+    if (response.data?.profile) {
+      updateStoredProfile(response.data.profile);
+    }
+    return response;
   },
 
   logout: clearSession,

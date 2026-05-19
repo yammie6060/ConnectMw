@@ -24,33 +24,33 @@ ConnectMW is a Next.js web app for Malawi's local services marketplace. It prese
 
 Install dependencies:
 
-```bash
+bash
 npm install
-```
+
 
 Run the development server:
 
-```bash
+bash
 npm run dev
-```
+
 
 Open the app at:
 
-```text
 http://localhost:3000
-```
+
 
 ## Available Scripts
 
-```bash
+bash
 npm run dev
-```
+
 
 Starts the local development server.
 
-```bash
+
+bash
 npm run build
-```
+
 
 Creates a production build.
 
@@ -71,6 +71,5 @@ Starts the production server after a successful build.
 
 ConnectMW is presented as a MiNDTech Company product with the tagline:
 
-```text
 Digital Mind. Reliable Technology.
-```
+
