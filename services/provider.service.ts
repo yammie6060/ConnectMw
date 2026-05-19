@@ -13,9 +13,9 @@ export type ProviderTypeOption = {
 };
 
 export type BusinessHour = {
-  day_of_week: number; // 0 = Monday … 6 = Sunday
-  opens_at: string | null; // "HH:MM"
-  closes_at: string | null; // "HH:MM"
+  day_of_week: number; 
+  opens_at: string | null; 
+  closes_at: string | null; 
   is_closed: boolean;
 };
 

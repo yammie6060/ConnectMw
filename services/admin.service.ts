@@ -80,11 +80,7 @@ export type ManagedPayment = {
   user: { id: string; email: string; phone: string } | null;
 };
 
-/**
- * Payload for creating a new staff account.
- * Password is intentionally absent — the system generates a temporary
- * one-time password and emails it to the new staff member.
- */
+
 export type StaffCreatePayload = {
   email: string;
   phone: string;

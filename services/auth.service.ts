@@ -23,11 +23,7 @@ export type AuthUser = {
   phone: string;
   is_verified: boolean;
   is_active: boolean;
-  /**
-   * True when a staff account was created by an admin and the user has not yet
-   * replaced the system-generated temporary password.  The app should redirect
-   * to /set-password immediately after login when this is true.
-   */
+
   must_change_password: boolean;
   roles: string[];
   providers: Array<{
@@ -60,7 +56,6 @@ export type LoginData = {
   access_token: string;
   token_type: "bearer";
   expires_in: number;
-  /** Mirrored from user.must_change_password for convenient top-level access. */
   must_change_password: boolean;
   user: AuthUser;
   profile: UserProfile | null;
@@ -203,10 +198,7 @@ export const authService = {
     });
   },
 
-  /**
-   * Called by a new staff member on first login to replace their
-   * system-generated temporary password.  Does not require the old password.
-   */
+
   async setNewPassword(userId: string, newPassword: string, confirmPassword: string) {
     const token = getToken();
     const response = await apiRequest<AuthUser>(`/users/staff/${userId}/set-password`, {

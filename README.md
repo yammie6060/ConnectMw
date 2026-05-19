@@ -72,4 +72,3 @@ Starts the production server after a successful build.
 ConnectMW is presented as a MiNDTech Company product with the tagline:
 
 Digital Mind. Reliable Technology.
-
