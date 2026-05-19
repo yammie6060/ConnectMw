@@ -4,7 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { authService } from "@/services/auth.service";
 import { getSession } from "@/lib/auth";
-import { Eye, EyeOff } from "lucide-react"; // or use any icon library you prefer
+import { Eye, EyeOff } from "lucide-react"; 
 
 export default function SetPasswordPage() {
   const router = useRouter();
