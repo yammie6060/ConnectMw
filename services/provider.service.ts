@@ -145,6 +145,34 @@ export type BeautyServicePayload = {
   images: Array<{ image_url: string; is_primary?: boolean }>;
 };
 
+export type ListingActionPayload = {
+  message?: string;
+  quantity?: number;
+  booking_date?: string;
+  start_time?: string;
+  notes?: string;
+};
+
+export type ServiceInteraction = {
+  id: string;
+  kind: "property" | "spare" | "beauty";
+  type: "rental_application" | "booking" | "order";
+  status: string;
+  message?: string | null;
+  notes?: string | null;
+  order_number?: string | null;
+  quantity?: number | null;
+  total_amount?: number | null;
+  booking_date?: string | null;
+  start_time?: string | null;
+  end_time?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+  listing: ServiceListing | null;
+  provider: ServiceListing["provider"];
+  customer?: { id: string; email: string; phone: string; full_name?: string | null } | null;
+};
+
 
 function authHeaders(): Record<string, string> {
   const token = getToken();
@@ -292,6 +320,18 @@ export const providerService = {
     });
   },
 
+  listInteractions(options: { scope?: "customer" | "provider"; type?: "rental_application" | "booking" | "order"; providerId?: string } = {}) {
+    const params = new URLSearchParams();
+    if (options.scope) params.set("scope", options.scope);
+    if (options.type) params.set("type", options.type);
+    if (options.providerId) params.set("provider_id", options.providerId);
+    const query = params.toString();
+    return apiRequest<{ items: ServiceInteraction[]; total: number }>(`/services/interactions${query ? `?${query}` : ""}`, {
+      method: "GET",
+      headers: authHeaders(),
+    });
+  },
+
   listProviderServices(providerId: string, kind?: "property" | "spare" | "beauty") {
     const query = kind ? `?kind=${kind}` : "";
     return apiRequest<{ items: ServiceListing[]; total: number }>(`/services/provider/${providerId}${query}`, {
@@ -352,6 +392,14 @@ export const providerService = {
     return apiRequest(`/services/${kind}/${itemId}`, {
       method: "DELETE",
       headers: authHeaders(),
+    });
+  },
+
+  createListingAction(kind: "property" | "spare" | "beauty", itemId: string, payload: ListingActionPayload) {
+    return apiRequest<{ id: string; status: string; order_number?: string }>(`/services/${kind}/${itemId}/action`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify(payload),
     });
   },
 

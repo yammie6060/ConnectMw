@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { PageShell } from "../components/PageShell";
-import { Check, PlusCircle } from "lucide-react";
+import { Check, PlusCircle, UploadCloud, X } from "lucide-react";
 import { mediaUrl, providerService, ServiceListing } from "@/services/provider.service";
 import { SessionUser } from "../types/dashboard";
 import { canActAsStaff, loadStaffProviderOptions, ProviderOption, sessionProviderOptions } from "../utils/providerAccess";
@@ -10,6 +10,7 @@ interface AddPartPageProps {
   user: SessionUser;
   editItem?: ServiceListing | null;
   onSaved?: () => void;
+  onCancel?: () => void;
 }
 
 const emptyForm = {
@@ -23,11 +24,11 @@ const emptyForm = {
   quantity: "1",
   city: "",
   description: "",
-  image_url: "",
+  image_urls: [] as string[],
   is_available: true,
 };
 
-export function AddPartPage({ color, user, editItem, onSaved }: AddPartPageProps) {
+export function AddPartPage({ color, user, editItem, onSaved, onCancel }: AddPartPageProps) {
   const [form, setForm] = useState(emptyForm);
   const [providerId, setProviderId] = useState(user.activeProviderId ?? "");
   const [providers, setProviders] = useState<ProviderOption[]>([]);
@@ -51,7 +52,7 @@ export function AddPartPage({ color, user, editItem, onSaved }: AddPartPageProps
         quantity: editItem.quantity != null ? String(editItem.quantity) : "1",
         city: editItem.city ?? "",
         description: editItem.description ?? "",
-        image_url: editItem.primary_image ?? "",
+        image_urls: editItem.images?.length ? editItem.images.map((image) => image.image_url) : editItem.primary_image ? [editItem.primary_image] : [],
         is_available: editItem.is_available,
       });
     }
@@ -110,7 +111,7 @@ export function AddPartPage({ color, user, editItem, onSaved }: AddPartPageProps
       city: form.city,
       description: form.description,
       is_available: form.is_available,
-      images: form.image_url ? [{ image_url: form.image_url, is_primary: true }] : [],
+      images: form.image_urls.map((image_url, index) => ({ image_url, is_primary: index === 0 })),
     };
     try {
       if (editItem) await providerService.updateSpareListing(editItem.id, payload);
@@ -126,19 +127,25 @@ export function AddPartPage({ color, user, editItem, onSaved }: AddPartPageProps
     }
   };
 
-  const uploadImage = async (file?: File) => {
-    if (!file) return;
+  const uploadImages = async (files?: FileList | null) => {
+    if (!files?.length) return;
     setUploading(true);
     setError("");
     try {
-      const res = await providerService.uploadImage(file);
-      if (res.data?.image_url) setForm((current) => ({ ...current, image_url: res.data!.image_url }));
+      const uploaded: string[] = [];
+      for (const file of Array.from(files)) {
+        const res = await providerService.uploadImage(file);
+        if (res.data?.image_url) uploaded.push(res.data.image_url);
+      }
+      if (uploaded.length) setForm((current) => ({ ...current, image_urls: [...current.image_urls, ...uploaded] }));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not upload image.");
+      setError(err instanceof Error ? err.message : "Could not upload images.");
     } finally {
       setUploading(false);
     }
   };
+
+  const removeImage = (url: string) => setForm((current) => ({ ...current, image_urls: current.image_urls.filter((image) => image !== url) }));
 
   return (
     <PageShell title={editItem ? "Edit Part" : "Add New Part"} subtitle="Publish spare parts with matching backend fields" color={color}>
@@ -178,19 +185,36 @@ export function AddPartPage({ color, user, editItem, onSaved }: AddPartPageProps
             <input type="checkbox" checked={form.is_available} onChange={set("is_available")} /> Published and available
           </label>
           {error && <div className="text-xs font-semibold" style={{ color: "#ef4444" }}>{error}</div>}
-          <button onClick={save} disabled={saving || !selectedProvider} className="w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50" style={{ background: saved ? "#10b981" : color, color: "#0d1f2d" }}>
-            {saved ? <><Check size={16} /> Saved</> : <><PlusCircle size={16} /> {saving ? "Saving..." : editItem ? "Update Part" : "List Part"}</>}
-          </button>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {editItem && (
+              <button onClick={onCancel} disabled={saving} className="py-3 rounded-xl font-bold text-sm transition-all disabled:opacity-50" style={{ background: "rgba(255,255,255,0.06)", color: "#cde0f0" }}>
+                Cancel
+              </button>
+            )}
+            <button onClick={save} disabled={saving || !selectedProvider} className={`${editItem ? "" : "sm:col-span-2"} py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50`} style={{ background: saved ? "#10b981" : color, color: "#0d1f2d" }}>
+              {saved ? <><Check size={16} /> Saved</> : <><PlusCircle size={16} /> {saving ? "Saving..." : editItem ? "Update Part" : "List Part"}</>}
+            </button>
+          </div>
         </div>
 
         <div className="rounded-xl p-5 flex flex-col gap-4" style={{ background: "var(--bg-secondary, #132333)", border: "1px solid rgba(255,255,255,0.07)" }}>
           <div>
-            <label style={labelStyle}>Primary Image</label>
-            <input type="file" accept="image/*" onChange={(e) => uploadImage(e.target.files?.[0])} style={fieldStyle} />
-            {uploading && <div className="text-xs mt-2" style={{ color: "#8ca5bc" }}>Uploading image...</div>}
+            <label style={labelStyle}>Listing Images</label>
+            <input type="file" accept="image/*" multiple onChange={(e) => uploadImages(e.target.files)} style={fieldStyle} />
+            {uploading && <div className="text-xs mt-2" style={{ color: "#8ca5bc" }}>Uploading images...</div>}
           </div>
-          <div className="rounded-xl overflow-hidden h-56" style={{ background: `${color}10`, border: `1px solid ${color}25` }}>
-            {form.image_url ? <img src={mediaUrl(form.image_url)} alt="" className="h-full w-full object-cover" /> : <div className="h-full flex items-center justify-center text-sm" style={{ color: "#8ca5bc" }}>Image preview</div>}
+          <div className="rounded-xl overflow-hidden min-h-56" style={{ background: `${color}10`, border: `1px solid ${color}25` }}>
+            {form.image_urls.length ? (
+              <div className="grid grid-cols-2 gap-2 p-2">
+                {form.image_urls.map((url, index) => (
+                  <div key={url} className="relative h-32 rounded-lg overflow-hidden">
+                    <img src={mediaUrl(url)} alt="" className="h-full w-full object-cover" />
+                    <button onClick={() => removeImage(url)} className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center" style={{ background: "rgba(0,0,0,0.55)", color: "#fff" }}><X size={13} /></button>
+                    {index === 0 && <span className="absolute bottom-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: color, color: "#0d1f2d" }}>Primary</span>}
+                  </div>
+                ))}
+              </div>
+            ) : <div className="h-56 flex flex-col items-center justify-center gap-2 text-sm" style={{ color: "#8ca5bc" }}><UploadCloud size={22} /> Image preview</div>}
           </div>
         </div>
       </div>

@@ -1,5 +1,7 @@
+import { useEffect, useMemo, useState } from 'react';
 import { MapPin, ChevronRight } from 'lucide-react';
 import { NavItem, RoleMeta, SessionUser } from '../types/dashboard';
+import { providerService, ServiceListing } from '@/services/provider.service';
 
 interface OverviewPageProps {
   user: SessionUser;
@@ -12,6 +14,75 @@ export function OverviewPage({ user, meta, navItems, setActiveItem }: OverviewPa
   const { color } = meta;
   const RoleIcon = meta.icon;
   const displayName = user.businessName || user.companyName || user.garageName || `${user.firstName} ${user.lastName}`;
+  const [liveListings, setLiveListings] = useState<ServiceListing[]>([]);
+  const [overviewLoading, setOverviewLoading] = useState(false);
+
+  const providerKind = user.role === "spareSeller" ? "spare" : user.role === "beautyProvider" ? "beauty" : ["landlord", "agent"].includes(user.role) ? "property" : undefined;
+
+  useEffect(() => {
+    let ignore = false;
+    setOverviewLoading(true);
+    const request = providerKind && user.activeProviderId
+      ? providerService.listProviderServices(user.activeProviderId, providerKind)
+      : providerService.browseServices();
+    request
+      .then((res) => {
+        if (!ignore) setLiveListings(res.data?.items ?? []);
+      })
+      .catch(() => {
+        if (!ignore) setLiveListings([]);
+      })
+      .finally(() => {
+        if (!ignore) setOverviewLoading(false);
+      });
+    return () => { ignore = true; };
+  }, [providerKind, user.activeProviderId]);
+
+  const liveStats = useMemo(() => {
+    if (providerKind === "property") {
+      return [
+        { ...meta.statCards[0], label: "Total Listings", value: liveListings.length, delta: undefined },
+        { ...meta.statCards[1], label: "Available", value: liveListings.filter((item) => item.is_available).length, delta: undefined },
+        { ...meta.statCards[2], label: "Occupied/Hidden", value: liveListings.filter((item) => !item.is_available).length, delta: undefined },
+        { ...meta.statCards[3], label: "Listed Cities", value: new Set(liveListings.map((item) => item.city).filter(Boolean)).size, delta: undefined },
+      ];
+    }
+    if (providerKind === "spare") {
+      return [
+        { ...meta.statCards[0], label: "Total Listings", value: liveListings.length, delta: undefined },
+        { ...meta.statCards[1], label: "Available", value: liveListings.filter((item) => item.is_available).length, delta: undefined },
+        { ...meta.statCards[2], label: "Stock Units", value: liveListings.reduce((sum, item) => sum + (item.quantity ?? 0), 0), delta: undefined },
+        { ...meta.statCards[3], label: "Unavailable", value: liveListings.filter((item) => !item.is_available).length, delta: undefined },
+      ];
+    }
+    if (providerKind === "beauty") {
+      return [
+        { ...meta.statCards[0], label: "Services", value: liveListings.length, delta: undefined },
+        { ...meta.statCards[1], label: "Published", value: liveListings.filter((item) => item.is_available).length, delta: undefined },
+        { ...meta.statCards[2], label: "Hidden", value: liveListings.filter((item) => !item.is_available).length, delta: undefined },
+        { ...meta.statCards[3], label: "Categories", value: new Set(liveListings.map((item) => item.category).filter(Boolean)).size, delta: undefined },
+      ];
+    }
+    if (user.role === "customer") {
+      return [
+        { ...meta.statCards[0], label: "Available Listings", value: liveListings.length, delta: undefined },
+        { ...meta.statCards[1], label: "Rentals", value: liveListings.filter((item) => item.kind === "property").length, delta: undefined },
+        { ...meta.statCards[2], label: "Beauty Services", value: liveListings.filter((item) => item.kind === "beauty").length, delta: undefined },
+        { ...meta.statCards[3], label: "Spare Parts", value: liveListings.filter((item) => item.kind === "spare").length, delta: undefined },
+      ];
+    }
+    return meta.statCards;
+  }, [liveListings, meta.statCards, providerKind, user.role]);
+
+  const liveRecentItems = useMemo(() => {
+    if (!liveListings.length) return [];
+    return liveListings.slice(0, 4).map((item) => ({
+      title: item.title,
+      sub: [item.provider?.business_name, item.city || item.street_address, item.created_at ? new Date(item.created_at).toLocaleDateString() : ""].filter(Boolean).join(" - "),
+      badge: item.status,
+      badgeColor: item.is_available ? "#10b981" : "#8ca5bc",
+    }));
+  }, [liveListings]);
 
   return (
     <div style={{ animation: "fadeIn 0.2s ease" }} className="py-5 sm:py-6">
@@ -44,7 +115,7 @@ export function OverviewPage({ user, meta, navItems, setActiveItem }: OverviewPa
       </div>
 
       <div className="grid grid-cols-1 min-[380px]:grid-cols-2 lg:grid-cols-4 gap-3 mb-5 sm:mb-6">
-        {meta.statCards.map((card: any) => {
+        {liveStats.map((card: any) => {
           const CardIcon = card.icon;
           return (
             <div key={card.label} className="rounded-xl p-4 min-h-[132px] transition-all duration-300 hover:-translate-y-0.5"
@@ -89,7 +160,8 @@ export function OverviewPage({ user, meta, navItems, setActiveItem }: OverviewPa
         <div className="lg:col-span-2 rounded-xl p-4 sm:p-5" >
           <h2 className="text-[11px] font-bold mb-4 uppercase tracking-widest" style={{ color: "var(--text-secondary, #8ca5bc)" }}>Recent Activity</h2>
           <div className="flex flex-col gap-2.5">
-            {meta.recentItems.map((item: any) => (
+            {overviewLoading && <div className="text-sm" style={{ color: "#8ca5bc" }}>Loading recent activity...</div>}
+            {!overviewLoading && liveRecentItems.map((item: any) => (
               <div key={item.title} className="flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all hover:translate-x-0.5"
                 style={{ background: "var(--bg-elevated, #1a2e42)", border: "1px solid var(--border-color, rgba(255,255,255,0.06))" }}>
                 <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: item.badgeColor }} />
@@ -104,6 +176,11 @@ export function OverviewPage({ user, meta, navItems, setActiveItem }: OverviewPa
                 <ChevronRight size={13} className="flex-shrink-0" style={{ color: "var(--text-secondary, #8ca5bc)" }} />
               </div>
             ))}
+            {!overviewLoading && liveRecentItems.length === 0 && (
+              <div className="rounded-xl p-4 text-sm" style={{ background: "var(--bg-elevated, #1a2e42)", color: "#8ca5bc", border: "1px solid var(--border-color, rgba(255,255,255,0.06))" }}>
+                No recent activity yet.
+              </div>
+            )}
           </div>
         </div>
       </div>

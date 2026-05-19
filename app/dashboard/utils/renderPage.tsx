@@ -92,7 +92,7 @@ export function renderPage(
         : <OverviewPage user={user} meta={meta} navItems={navItems} setActiveItem={setActiveItem} />;
       break;
     case "enquiries":   
-      component = <EnquiriesPage color={color} />;
+      component = <EnquiriesPage color={color} user={user} />;
       break;
     case "add":         
       component = role === "spareSeller" || ["admin", "support"].includes(role)
@@ -100,7 +100,7 @@ export function renderPage(
         : <OverviewPage user={user} meta={meta} navItems={navItems} setActiveItem={setActiveItem} />;
       break;
     case "analytics":   
-      component = <AnalyticsPage color={color} meta={meta} />;
+      component = <AnalyticsPage color={color} user={user} />;
       break;
 
     // Landlord
@@ -115,12 +115,12 @@ export function renderPage(
         : <OverviewPage user={user} meta={meta} navItems={navItems} setActiveItem={setActiveItem} />;
       break;
     case "calendar":    
-      component = <CalendarPage color={color} role={role} />;
+      component = <CalendarPage color={color} role={role} user={user} />;
       break;
 
     // Beauty Provider
     case "schedule":    
-      component = <CalendarPage color={color} role={role} />;
+      component = <CalendarPage color={color} role={role} user={user} />;
       break;
     case "portfolio":   
       component = role === "beautyProvider" || ["admin", "support"].includes(role)

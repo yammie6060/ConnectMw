@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { PageShell } from "../components/PageShell";
-import { Plus, Edit2, Trash2, Clock, Tag, Camera, Check } from "lucide-react";
+import { Plus, Edit2, Trash2, Clock, Tag, Camera, Check, UploadCloud, X } from "lucide-react";
 import { mediaUrl, providerService, ServiceListing } from "@/services/provider.service";
 import { SessionUser } from "../types/dashboard";
 import { canActAsStaff, loadStaffProviderOptions, ProviderOption, sessionProviderOptions } from "../utils/providerAccess";
@@ -12,7 +12,7 @@ interface PortfolioPageProps {
 }
 
 const DEFAULT_CATEGORIES = ["hair", "barber", "nails", "makeup", "spa"];
-const emptyForm = { name: "", category: "hair", price: "", duration_minutes: "", description: "", image_url: "", is_available: true };
+const emptyForm = { name: "", category: "hair", price: "", duration_minutes: "", description: "", image_urls: [] as string[], is_available: true };
 
 function money(value?: number | null) {
   return value == null ? "Price not set" : `K${value.toLocaleString()}`;
@@ -82,7 +82,7 @@ export function PortfolioPage({ color, user, initialShowAdd = false }: Portfolio
       price: service.price ? String(service.price) : "",
       duration_minutes: service.duration_minutes != null ? String(service.duration_minutes) : "",
       description: service.description || "",
-      image_url: service.primary_image || "",
+      image_urls: service.images?.length ? service.images.map((image) => image.image_url) : service.primary_image ? [service.primary_image] : [],
       is_available: service.is_available,
     });
   };
@@ -106,7 +106,7 @@ export function PortfolioPage({ color, user, initialShowAdd = false }: Portfolio
       duration_minutes: form.duration_minutes ? Number(form.duration_minutes) : null,
       price: form.price ? Number(form.price) : null,
       is_available: form.is_available,
-      images: form.image_url ? [{ image_url: form.image_url, is_primary: true }] : [],
+      images: form.image_urls.map((image_url, index) => ({ image_url, is_primary: index === 0 })),
     };
     try {
       if (editing) await providerService.updateBeautyService(editing.id, payload);
@@ -122,19 +122,25 @@ export function PortfolioPage({ color, user, initialShowAdd = false }: Portfolio
     }
   };
 
-  const uploadImage = async (file?: File) => {
-    if (!file) return;
+  const uploadImages = async (files?: FileList | null) => {
+    if (!files?.length) return;
     setUploading(true);
     setError("");
     try {
-      const res = await providerService.uploadImage(file);
-      if (res.data?.image_url) setForm((current) => ({ ...current, image_url: res.data!.image_url }));
+      const uploaded: string[] = [];
+      for (const file of Array.from(files)) {
+        const res = await providerService.uploadImage(file);
+        if (res.data?.image_url) uploaded.push(res.data.image_url);
+      }
+      if (uploaded.length) setForm((current) => ({ ...current, image_urls: [...current.image_urls, ...uploaded] }));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not upload image.");
+      setError(err instanceof Error ? err.message : "Could not upload images.");
     } finally {
       setUploading(false);
     }
   };
+
+  const removeImage = (url: string) => setForm((current) => ({ ...current, image_urls: current.image_urls.filter((image) => image !== url) }));
 
   const deleteItem = async (service: ServiceListing) => {
     await providerService.deleteListing("beauty", service.id);
@@ -174,11 +180,21 @@ export function PortfolioPage({ color, user, initialShowAdd = false }: Portfolio
           <div className="grid grid-cols-2 gap-3 mb-3">
             <div className="col-span-2"><label className="block text-[10px] font-semibold mb-1 uppercase" style={labelStyle}>Service Name</label><input value={form.name} onChange={set("name")} placeholder="Fade Cut, Ghana Weave, Bridal Makeup" style={fieldStyle} /></div>
             <div><label className="block text-[10px] font-semibold mb-1 uppercase" style={labelStyle}>Category</label><select value={form.category} onChange={set("category")} style={fieldStyle}>{categories.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
-            <div><label className="block text-[10px] font-semibold mb-1 uppercase" style={labelStyle}>Image</label><input type="file" accept="image/*" onChange={(e) => uploadImage(e.target.files?.[0])} style={fieldStyle} />{uploading && <div className="text-[10px] mt-1" style={{ color: "#8ca5bc" }}>Uploading...</div>}</div>
+            <div><label className="block text-[10px] font-semibold mb-1 uppercase" style={labelStyle}>Images</label><input type="file" accept="image/*" multiple onChange={(e) => uploadImages(e.target.files)} style={fieldStyle} />{uploading && <div className="text-[10px] mt-1" style={{ color: "#8ca5bc" }}>Uploading...</div>}</div>
             <div><label className="block text-[10px] font-semibold mb-1 uppercase" style={labelStyle}>Price (MWK)</label><input type="number" value={form.price} onChange={set("price")} style={fieldStyle} /></div>
             <div><label className="block text-[10px] font-semibold mb-1 uppercase" style={labelStyle}>Duration Minutes</label><input type="number" value={form.duration_minutes} onChange={set("duration_minutes")} placeholder="60" style={fieldStyle} /></div>
             <div className="col-span-2"><label className="block text-[10px] font-semibold mb-1 uppercase" style={labelStyle}>Description</label><textarea value={form.description} onChange={set("description")} rows={2} style={{ ...fieldStyle, resize: "none" }} /></div>
             <label className="col-span-2 flex items-center gap-2 text-xs font-semibold" style={{ color: "#8ca5bc" }}><input type="checkbox" checked={form.is_available} onChange={set("is_available")} /> Published and available for browsing</label>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+            {form.image_urls.map((url, index) => (
+              <div key={url} className="relative h-24 rounded-lg overflow-hidden" style={{ background: `${color}10` }}>
+                <img src={mediaUrl(url)} alt="" className="h-full w-full object-cover" />
+                <button onClick={() => removeImage(url)} className="absolute top-1 right-1 w-6 h-6 rounded-full flex items-center justify-center" style={{ background: "rgba(0,0,0,0.55)", color: "#fff" }}><X size={12} /></button>
+                {index === 0 && <span className="absolute bottom-1 left-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: color, color: "#0d1f2d" }}>Primary</span>}
+              </div>
+            ))}
+            {form.image_urls.length === 0 && <div className="col-span-2 sm:col-span-4 h-24 rounded-lg flex items-center justify-center gap-2 text-xs" style={{ background: `${color}10`, color: "#8ca5bc", border: `1px solid ${color}25` }}><UploadCloud size={16} /> Service image preview</div>}
           </div>
           {error && <div className="mb-3 text-xs font-semibold" style={{ color: "#ef4444" }}>{error}</div>}
           <button onClick={save} disabled={saving} className="w-full py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2" style={{ background: saved ? "#10b981" : color, color: "#0d1f2d" }}>
