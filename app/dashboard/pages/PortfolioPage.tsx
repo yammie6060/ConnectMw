@@ -27,6 +27,7 @@ export function PortfolioPage({ color, user, initialShowAdd = false }: Portfolio
   const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
   const [providerId, setProviderId] = useState(user.activeProviderId ?? "");
   const [providers, setProviders] = useState<ProviderOption[]>([]);
+  const [ownerForm, setOwnerForm] = useState({ fullName: "", email: "", phone: "", businessName: "", address: "" });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -72,6 +73,8 @@ export function PortfolioPage({ color, user, initialShowAdd = false }: Portfolio
   const filtered = services.filter((service) => activeCat === "All" || service.category === activeCat);
   const set = (k: keyof typeof emptyForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.type === "checkbox" ? (e.target as HTMLInputElement).checked : e.target.value }));
+  const setOwner = (k: keyof typeof ownerForm) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setOwnerForm((f) => ({ ...f, [k]: e.target.value }));
 
   const startEdit = (service: ServiceListing) => {
     setEditing(service);
@@ -95,11 +98,33 @@ export function PortfolioPage({ color, user, initialShowAdd = false }: Portfolio
 
   const save = async () => {
     setError("");
-    if (!providerId) return setError("Choose a provider workspace first.");
     if (!form.name.trim()) return setError("Service name is required.");
     setSaving(true);
+    let serviceProviderId = providerId;
+    try {
+      if (!serviceProviderId && staffMode) {
+        if (!ownerForm.fullName.trim() || !ownerForm.email.trim() || !ownerForm.phone.trim()) {
+          setSaving(false);
+          return setError("Add owner name, email, and phone or choose an existing provider.");
+        }
+        const ownerProvider = await providerService.createProviderForOwner({
+          provider_type_name: "beauty_provider",
+          owner_full_name: ownerForm.fullName.trim(),
+          owner_email: ownerForm.email.trim(),
+          owner_phone: ownerForm.phone.trim(),
+          business_name: ownerForm.businessName.trim() || ownerForm.fullName.trim(),
+          physical_address: ownerForm.address.trim(),
+        });
+        serviceProviderId = ownerProvider.data?.id ?? "";
+        setProviderId(serviceProviderId);
+      }
+      if (!serviceProviderId) throw new Error("Choose a provider workspace first.");
+    } catch (err) {
+      setSaving(false);
+      return setError(err instanceof Error ? err.message : "Could not prepare owner provider.");
+    }
     const payload = {
-      provider_id: providerId,
+      provider_id: serviceProviderId,
       category: form.category,
       name: form.name.trim(),
       description: form.description,
@@ -163,7 +188,7 @@ export function PortfolioPage({ color, user, initialShowAdd = false }: Portfolio
 
       <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
         <select value={providerId} onChange={(e) => setProviderId(e.target.value)} className="px-3 py-2 rounded-lg text-xs font-semibold outline-none" style={{ background: "var(--bg-secondary, #132333)", color: "var(--text-primary, white)", border: "1px solid rgba(255,255,255,0.07)" }}>
-          <option value="">Select provider</option>
+          <option value="">{staffMode ? "Create from owner details" : "Select provider"}</option>
           {providers.map((provider) => <option key={provider.id} value={provider.id}>{provider.business_name || provider.display_name || "Provider"}{provider.ownerEmail ? ` - ${provider.ownerEmail}` : ""}</option>)}
         </select>
         <div className="flex gap-1.5 flex-wrap">
@@ -177,6 +202,15 @@ export function PortfolioPage({ color, user, initialShowAdd = false }: Portfolio
       {showAdd && (
         <div className="rounded-2xl p-4 mb-5" style={{ background: "var(--bg-secondary, #132333)", border: `1px solid ${color}30` }}>
           <h4 className="text-xs font-bold uppercase mb-3" style={{ color }}>{editing ? "Edit Service" : "New Service"}</h4>
+          {staffMode && !providerId && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3 rounded-xl p-3" style={{ background: "var(--bg-elevated, #1a2e42)", border: "1px solid rgba(255,255,255,0.07)" }}>
+              <input value={ownerForm.fullName} onChange={setOwner("fullName")} placeholder="Owner name *" style={fieldStyle} />
+              <input value={ownerForm.phone} onChange={setOwner("phone")} placeholder="Owner phone *" style={fieldStyle} />
+              <input type="email" value={ownerForm.email} onChange={setOwner("email")} placeholder="Owner email *" style={fieldStyle} />
+              <input value={ownerForm.businessName} onChange={setOwner("businessName")} placeholder="Business name" style={fieldStyle} />
+              <input className="sm:col-span-2" value={ownerForm.address} onChange={setOwner("address")} placeholder="Physical address" style={fieldStyle} />
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3 mb-3">
             <div className="col-span-2"><label className="block text-[10px] font-semibold mb-1 uppercase" style={labelStyle}>Service Name</label><input value={form.name} onChange={set("name")} placeholder="Fade Cut, Ghana Weave, Bridal Makeup" style={fieldStyle} /></div>
             <div><label className="block text-[10px] font-semibold mb-1 uppercase" style={labelStyle}>Category</label><select value={form.category} onChange={set("category")} style={fieldStyle}>{categories.map(c => <option key={c} value={c}>{c}</option>)}</select></div>

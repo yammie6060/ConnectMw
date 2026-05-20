@@ -2,9 +2,34 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "ConnectMW — Digital Mind. Reliable Technology.",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://connectmw.com"),
+  title: {
+    default: "ConnectMW - Rentals, Beauty Services, and Auto Spares in Malawi",
+    template: "%s | ConnectMW",
+  },
   description:
     "Malawi's all-in-one platform for rentals, beauty services, and auto spares. Verified. Secure. Local.",
+  keywords: ["ConnectMW","connect malawi", "Malawi rentals", "Malawi houses", "beauty services Malawi", "auto spares Malawi", "spare parts Malawi"],
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    title: "ConnectMW - Local services across Malawi",
+    description: "Find rentals, beauty services, and auto spare parts from local providers in Malawi.",
+    url: "/",
+    siteName: "ConnectMW",
+    locale: "en_MW",
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: "ConnectMW",
+    description: "Malawi's platform for rentals, beauty services, and auto spares.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
   icons: {
     icon: [{ url: "/favicon.ico", sizes: "any" }],
     shortcut: "/favicon.ico",

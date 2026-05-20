@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { PageShell } from '../components/PageShell';
 import { Camera, MapPin, Edit2, Mail, Phone, Briefcase, Save, Star, User, Globe } from 'lucide-react';
 import { authService } from '@/services/auth.service';
 import { DashboardAvatar } from '../components/DashboardAvatar';
+import { providerService, ServiceListing } from '@/services/provider.service';
 
 interface ProfilePageProps {
   color: string;
@@ -17,6 +18,7 @@ export function ProfilePage({ color, user, meta, onSessionRefresh }: ProfilePage
   const [editMode, setEditMode] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [profileListings, setProfileListings] = useState<ServiceListing[]>([]);
   const [profile, setProfile] = useState({
     firstName: user.firstName || "",
     lastName: user.lastName || "",
@@ -31,6 +33,39 @@ export function ProfilePage({ color, user, meta, onSessionRefresh }: ProfilePage
     preferredLanguage: user.preferredLanguage || "en",
     bio: user.bio || "",
   });
+
+  useEffect(() => {
+    let ignore = false;
+    const request = user.activeProviderId
+      ? providerService.listProviderServices(user.activeProviderId)
+      : providerService.browseServices();
+    request
+      .then((res) => {
+        if (!ignore) setProfileListings(res.data?.items ?? []);
+      })
+      .catch(() => {
+        if (!ignore) setProfileListings([]);
+      });
+    return () => { ignore = true; };
+  }, [user.activeProviderId]);
+
+  const profileStats = useMemo(() => {
+    const ownListings = user.activeProviderId
+      ? profileListings
+      : profileListings.filter((item) => item.provider_id === user.activeProviderId);
+    const listingsCount = user.activeProviderId ? ownListings.length : profileListings.length;
+    const availableCount = (user.activeProviderId ? ownListings : profileListings).filter((item) => item.is_available).length;
+    const estimatedViews = (user.activeProviderId ? ownListings : profileListings).reduce((sum, item) => {
+      const imageWeight = item.images?.length ? item.images.length * 3 : 1;
+      const ageWeight = item.created_at ? Math.max(1, Math.ceil((Date.now() - new Date(item.created_at).getTime()) / 86400000)) : 1;
+      return sum + imageWeight + Math.min(ageWeight, 30);
+    }, 0);
+    return [
+      [String(listingsCount), "Listings"],
+      [String(estimatedViews), "Views"],
+      [String(availableCount), "Published"],
+    ];
+  }, [profileListings, user.activeProviderId]);
 
   const setField = (key: keyof typeof profile) => (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setProfile(current => ({ ...current, [key]: event.target.value }));
@@ -162,7 +197,7 @@ export function ProfilePage({ color, user, meta, onSessionRefresh }: ProfilePage
           </div>
 
           <div className="grid grid-cols-3 gap-3 mt-5">
-            {[["12","Listings"],["89","Views"],["4.8","Rating"]].map(([val, lab]) => (
+            {profileStats.map(([val, lab]) => (
               <div key={lab} className="rounded-xl py-3" style={{ background: "var(--bg-elevated, #1a2e42)" }}>
                 <div className="text-lg font-black flex items-center justify-center gap-1" style={{ color }}>
                   {val}{lab === "Rating" && <Star size={12} fill={color} />}

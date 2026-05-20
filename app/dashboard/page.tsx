@@ -36,6 +36,13 @@ function setSavedActivePage(role: string, item: string) {
   window.localStorage.setItem(pageKeyForRole(role), item);
 }
 
+function clearSavedActivePages() {
+  if (typeof window === "undefined") return;
+  Object.keys(window.localStorage)
+    .filter((key) => key.startsWith(`${ACTIVE_PAGE_KEY}:`))
+    .forEach((key) => window.localStorage.removeItem(key));
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState<SessionUser | null>(null);
@@ -87,6 +94,7 @@ export default function DashboardPage() {
   };
 
   const confirmLogout = () => {
+    clearSavedActivePages();
     clearSession();
     router.push("/signin");
   };

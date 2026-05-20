@@ -58,6 +58,16 @@ const EMPTY_PROVIDER_FORM: AdminProviderCreatePayload = {
   physical_address: "",
 };
 
+const EMPTY_OWNER_PROVIDER_FORM = {
+  provider_type_name: "",
+  owner_full_name: "",
+  owner_email: "",
+  owner_phone: "",
+  business_name: "",
+  business_license: "",
+  physical_address: "",
+};
+
 // Shared input style used in forms
 const inputStyle: React.CSSProperties = {
   width: "100%",
@@ -87,6 +97,7 @@ export function AdminManagementPage({
   const [providerForms, setProviderForms] = useState<Record<string, AdminProviderCreatePayload>>(
     {}
   );
+  const [ownerProviderForm, setOwnerProviderForm] = useState(EMPTY_OWNER_PROVIDER_FORM);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
@@ -228,6 +239,40 @@ export function AdminManagementPage({
       setMessage(err instanceof Error ? err.message : "Could not create provider workspace.");
     } finally {
       setActionLoading((prev) => ({ ...prev, [key]: false }));
+    }
+  }
+
+  async function createProviderForOwner(event: React.FormEvent) {
+    event.preventDefault();
+    const form = {
+      ...ownerProviderForm,
+      provider_type_name: ownerProviderForm.provider_type_name || providerTypes[0]?.name || "",
+    };
+    if (!form.provider_type_name || !form.owner_full_name.trim() || !form.owner_email.trim() || !form.owner_phone.trim()) {
+      setIsError(true);
+      setMessage("Add provider type, owner name, email, and phone.");
+      return;
+    }
+    setActionLoading((prev) => ({ ...prev, "owner-provider:create": true }));
+    try {
+      await providerService.createProviderForOwner({
+        provider_type_name: form.provider_type_name,
+        owner_full_name: form.owner_full_name.trim(),
+        owner_email: form.owner_email.trim(),
+        owner_phone: form.owner_phone.trim(),
+        business_name: form.business_name.trim() || form.owner_full_name.trim(),
+        business_license: form.business_license.trim() || undefined,
+        physical_address: form.physical_address.trim() || undefined,
+      });
+      setOwnerProviderForm(EMPTY_OWNER_PROVIDER_FORM);
+      setIsError(false);
+      setMessage("Provider workspace created for owner.");
+      await loadManagementData();
+    } catch (err) {
+      setIsError(true);
+      setMessage(err instanceof Error ? err.message : "Could not create provider workspace.");
+    } finally {
+      setActionLoading((prev) => ({ ...prev, "owner-provider:create": false }));
     }
   }
 
@@ -445,6 +490,91 @@ export function AdminManagementPage({
         </div>
       )}
     </div>
+  );
+
+  const OwnerProviderForm = () => (
+    <form
+      onSubmit={createProviderForOwner}
+      className="rounded-xl p-4 space-y-3"
+      style={{
+        background: "var(--bg-secondary, #132333)",
+        border: "1px solid rgba(255,255,255,0.07)",
+      }}
+    >
+      <div className="flex items-start gap-2">
+        <Building2 size={16} style={{ color, marginTop: 2 }} />
+        <div>
+          <div className="font-bold text-sm" style={{ color: "var(--text-primary, white)" }}>
+            Register Business for Provider
+          </div>
+          <p className="text-xs mt-1" style={{ color: "#8ca5bc" }}>
+            Create the owner account if needed, assign ownership, and record the staff action.
+          </p>
+        </div>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+        <select
+          value={ownerProviderForm.provider_type_name || providerTypes[0]?.name || ""}
+          onChange={(e) => setOwnerProviderForm((prev) => ({ ...prev, provider_type_name: e.target.value }))}
+          style={inputStyle}
+        >
+          {providerTypes.map((type) => (
+            <option key={type.id} value={type.name}>
+              {type.display_name}
+            </option>
+          ))}
+        </select>
+        <input
+          required
+          value={ownerProviderForm.owner_full_name}
+          onChange={(e) => setOwnerProviderForm((prev) => ({ ...prev, owner_full_name: e.target.value }))}
+          placeholder="Owner full name"
+          style={inputStyle}
+        />
+        <input
+          required
+          type="email"
+          value={ownerProviderForm.owner_email}
+          onChange={(e) => setOwnerProviderForm((prev) => ({ ...prev, owner_email: e.target.value }))}
+          placeholder="Owner email"
+          style={inputStyle}
+        />
+        <input
+          required
+          value={ownerProviderForm.owner_phone}
+          onChange={(e) => setOwnerProviderForm((prev) => ({ ...prev, owner_phone: e.target.value }))}
+          placeholder="Owner phone"
+          style={inputStyle}
+        />
+        <input
+          value={ownerProviderForm.business_name}
+          onChange={(e) => setOwnerProviderForm((prev) => ({ ...prev, business_name: e.target.value }))}
+          placeholder="Business name"
+          style={inputStyle}
+        />
+        <input
+          value={ownerProviderForm.business_license}
+          onChange={(e) => setOwnerProviderForm((prev) => ({ ...prev, business_license: e.target.value }))}
+          placeholder="Business license"
+          style={inputStyle}
+        />
+        <input
+          className="sm:col-span-2"
+          value={ownerProviderForm.physical_address}
+          onChange={(e) => setOwnerProviderForm((prev) => ({ ...prev, physical_address: e.target.value }))}
+          placeholder="Physical address"
+          style={inputStyle}
+        />
+        <button
+          disabled={actionLoading["owner-provider:create"] || providerTypes.length === 0}
+          className="inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-bold disabled:opacity-50"
+          style={{ background: color, color: "#0d1f2d" }}
+        >
+          {actionLoading["owner-provider:create"] ? <Loader2 size={14} className="animate-spin" /> : <UserPlus size={14} />}
+          Create Workspace
+        </button>
+      </div>
+    </form>
   );
 
   const UserDetail = ({ managedUser }: { managedUser: ManagedUser }) => (
@@ -859,21 +989,24 @@ export function AdminManagementPage({
 
           {/* ── Users ── */}
           {tab === "users" && (
-            <div
-              className="rounded-xl overflow-hidden"
-              style={{
-                background: "var(--bg-secondary, #132333)",
-                border: "1px solid rgba(255,255,255,0.07)",
-              }}
-            >
-              {customerUsers.map((u) => (
-                <UserRow key={u.id} managedUser={u} />
-              ))}
-              {customerUsers.length === 0 && (
-                <div className="p-5 text-sm" style={{ color: "#8ca5bc" }}>
-                  No customer users found.
-                </div>
-              )}
+            <div className="space-y-4">
+              <OwnerProviderForm />
+              <div
+                className="rounded-xl overflow-hidden"
+                style={{
+                  background: "var(--bg-secondary, #132333)",
+                  border: "1px solid rgba(255,255,255,0.07)",
+                }}
+              >
+                {customerUsers.map((u) => (
+                  <UserRow key={u.id} managedUser={u} />
+                ))}
+                {customerUsers.length === 0 && (
+                  <div className="p-5 text-sm" style={{ color: "#8ca5bc" }}>
+                    No customer users found.
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -964,6 +1097,9 @@ export function AdminManagementPage({
           {/* ── Provider Review ── */}
           {tab === "providers" && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="sm:col-span-2">
+                <OwnerProviderForm />
+              </div>
               {pendingProviders.length === 0 && (
                 <div
                   className="sm:col-span-2 rounded-xl p-5 text-sm"

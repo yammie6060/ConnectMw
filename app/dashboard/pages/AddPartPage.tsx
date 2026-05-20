@@ -32,6 +32,7 @@ export function AddPartPage({ color, user, editItem, onSaved, onCancel }: AddPar
   const [form, setForm] = useState(emptyForm);
   const [providerId, setProviderId] = useState(user.activeProviderId ?? "");
   const [providers, setProviders] = useState<ProviderOption[]>([]);
+  const [ownerForm, setOwnerForm] = useState({ fullName: "", email: "", phone: "", businessName: "", address: "" });
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -79,6 +80,7 @@ export function AddPartPage({ color, user, editItem, onSaved, onCancel }: AddPar
 
   const set = (k: keyof typeof emptyForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.type === "checkbox" ? (e.target as HTMLInputElement).checked : e.target.value }));
+  const setOwner = (k: keyof typeof ownerForm) => (e: React.ChangeEvent<HTMLInputElement>) => setOwnerForm((f) => ({ ...f, [k]: e.target.value }));
 
   const fieldStyle = {
     background: "var(--bg-secondary, #132333)",
@@ -95,11 +97,33 @@ export function AddPartPage({ color, user, editItem, onSaved, onCancel }: AddPar
 
   const save = async () => {
     setError("");
-    if (!providerId) return setError("Choose a provider workspace first.");
     if (!form.title.trim()) return setError("Part title is required.");
     setSaving(true);
+    let listingProviderId = providerId;
+    try {
+      if (!listingProviderId && staffMode) {
+        if (!ownerForm.fullName.trim() || !ownerForm.email.trim() || !ownerForm.phone.trim()) {
+          setSaving(false);
+          return setError("Add owner name, email, and phone or choose an existing provider.");
+        }
+        const ownerProvider = await providerService.createProviderForOwner({
+          provider_type_name: "spare_seller",
+          owner_full_name: ownerForm.fullName.trim(),
+          owner_email: ownerForm.email.trim(),
+          owner_phone: ownerForm.phone.trim(),
+          business_name: ownerForm.businessName.trim() || ownerForm.fullName.trim(),
+          physical_address: ownerForm.address.trim(),
+        });
+        listingProviderId = ownerProvider.data?.id ?? "";
+        setProviderId(listingProviderId);
+      }
+      if (!listingProviderId) throw new Error("Choose a provider workspace first.");
+    } catch (err) {
+      setSaving(false);
+      return setError(err instanceof Error ? err.message : "Could not prepare owner provider.");
+    }
     const payload = {
-      provider_id: providerId,
+      provider_id: listingProviderId,
       title: form.title.trim(),
       vehicle_type: form.vehicle_type,
       vehicle_brand: form.vehicle_brand,
@@ -154,7 +178,7 @@ export function AddPartPage({ color, user, editItem, onSaved, onCancel }: AddPar
           <div>
             <label style={labelStyle}>Provider</label>
             <select value={providerId} onChange={(e) => setProviderId(e.target.value)} disabled={!staffMode && providers.length <= 1} style={fieldStyle}>
-              <option value="">Select provider</option>
+              <option value="">{staffMode ? "Create from owner details below" : "Select provider"}</option>
               {providers.map((provider) => (
                 <option key={provider.id} value={provider.id}>
                   {provider.business_name || provider.display_name || "Provider"}{provider.ownerEmail ? ` - ${provider.ownerEmail}` : ""}
@@ -162,6 +186,15 @@ export function AddPartPage({ color, user, editItem, onSaved, onCancel }: AddPar
               ))}
             </select>
           </div>
+          {staffMode && !providerId && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-xl p-3" style={{ background: "var(--bg-elevated, #1a2e42)", border: "1px solid rgba(255,255,255,0.07)" }}>
+              <div><label style={labelStyle}>Owner Name</label><input value={ownerForm.fullName} onChange={setOwner("fullName")} style={fieldStyle} /></div>
+              <div><label style={labelStyle}>Owner Phone</label><input value={ownerForm.phone} onChange={setOwner("phone")} style={fieldStyle} /></div>
+              <div><label style={labelStyle}>Owner Email</label><input type="email" value={ownerForm.email} onChange={setOwner("email")} style={fieldStyle} /></div>
+              <div><label style={labelStyle}>Display Name</label><input value={ownerForm.businessName} onChange={setOwner("businessName")} placeholder="Optional" style={fieldStyle} /></div>
+              <div className="sm:col-span-2"><label style={labelStyle}>Owner Address</label><input value={ownerForm.address} onChange={setOwner("address")} placeholder="Optional" style={fieldStyle} /></div>
+            </div>
+          )}
           <div>
             <label style={labelStyle}>Listing Title</label>
             <input value={form.title} onChange={set("title")} placeholder="Toyota Hiace Side Mirror" style={fieldStyle} />
@@ -191,7 +224,7 @@ export function AddPartPage({ color, user, editItem, onSaved, onCancel }: AddPar
                 Cancel
               </button>
             )}
-            <button onClick={save} disabled={saving || !selectedProvider} className={`${editItem ? "" : "sm:col-span-2"} py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50`} style={{ background: saved ? "#10b981" : color, color: "#0d1f2d" }}>
+            <button onClick={save} disabled={saving || (!selectedProvider && !staffMode)} className={`${editItem ? "" : "sm:col-span-2"} py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50`} style={{ background: saved ? "#10b981" : color, color: "#0d1f2d" }}>
               {saved ? <><Check size={16} /> Saved</> : <><PlusCircle size={16} /> {saving ? "Saving..." : editItem ? "Update Part" : "List Part"}</>}
             </button>
           </div>

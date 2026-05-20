@@ -139,7 +139,7 @@ export function renderPage(
       component = <OrdersPage color={color} />;
       break;
     case "reviews":     
-      component = <ReviewsPage color={color} />;
+      component = <ReviewsPage color={color} user={user} />;
       break;
 
     case "browse":

@@ -78,6 +78,8 @@ export type ServiceListing = {
   area_sqm?: number | null;
   property_type?: string | null;
   property_type_display?: string | null;
+  amenities?: Array<{ id: string; name: string }>;
+  amenity_ids?: string[];
   vehicle_type?: string | null;
   vehicle_brand?: string | null;
   vehicle_model?: string | null;
@@ -115,6 +117,7 @@ export type PropertyListingPayload = {
   bathrooms?: number | null;
   area_sqm?: number | null;
   is_available: boolean;
+  amenity_ids?: string[];
   images: Array<{ image_url: string; is_primary?: boolean }>;
 };
 
@@ -171,6 +174,15 @@ export type ServiceInteraction = {
   listing: ServiceListing | null;
   provider: ServiceListing["provider"];
   customer?: { id: string; email: string; phone: string; full_name?: string | null } | null;
+};
+
+export type ProviderReview = {
+  id: string;
+  rating: number;
+  comment?: string | null;
+  created_at?: string | null;
+  reviewer?: { id: string; email: string; phone: string; full_name?: string | null } | null;
+  provider_id: string;
 };
 
 
@@ -306,6 +318,7 @@ export const providerService = {
     return apiRequest<{
       property_types: Array<{ id: string; name: string; display_name: string }>;
       beauty_categories: Array<{ id: string; name: string; display_name: string; icon?: string | null }>;
+      amenities: Array<{ id: string; name: string }>;
     }>("/services/options", { method: "GET", headers: authHeaders() });
   },
 
@@ -332,6 +345,14 @@ export const providerService = {
     });
   },
 
+  listReviews(providerId?: string) {
+    const query = providerId ? `?provider_id=${providerId}` : "";
+    return apiRequest<{ items: ProviderReview[]; total: number; average: number }>(`/services/reviews${query}`, {
+      method: "GET",
+      headers: authHeaders(),
+    });
+  },
+
   listProviderServices(providerId: string, kind?: "property" | "spare" | "beauty") {
     const query = kind ? `?kind=${kind}` : "";
     return apiRequest<{ items: ServiceListing[]; total: number }>(`/services/provider/${providerId}${query}`, {
@@ -345,6 +366,22 @@ export const providerService = {
       method: "POST",
       headers: authHeaders(),
       body: JSON.stringify(payload),
+    });
+  },
+
+  createProviderForOwner(data: {
+    provider_type_name: string;
+    owner_full_name: string;
+    owner_email: string;
+    owner_phone: string;
+    business_name?: string;
+    business_license?: string;
+    physical_address?: string;
+  }) {
+    return apiRequest<ProviderProfile & { user_id: string; type: string | null; display_name: string | null; ownerEmail?: string | null; ownerPhone?: string | null }>("/provider/staff/providers", {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify(data),
     });
   },
 
@@ -401,6 +438,22 @@ export const providerService = {
       headers: authHeaders(),
       body: JSON.stringify(payload),
     });
+  },
+
+  async searchSparesByPhoto(file: File, search?: string) {
+    const form = new FormData();
+    form.append("file", file);
+    if (search) form.append("search", search);
+    const response = await fetch(`${API_BASE_URL}/services/spares/photo-search`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: form,
+    });
+    const data = await response.json().catch(() => null);
+    if (!response.ok) {
+      throw new ApiError(data?.detail || data?.message || "Photo search failed.", response.status, data);
+    }
+    return data as { success: boolean; message: string; data?: { items: ServiceListing[]; total: number; ai_status: string } };
   },
 
   async uploadImage(file: File) {

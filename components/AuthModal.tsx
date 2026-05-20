@@ -80,6 +80,12 @@ function applyTheme() {
   document.body.style.color = isLight ? "#111827" : "#ffffff";
 }
 
+function resetDashboardLanding() {
+  Object.keys(localStorage)
+    .filter((key) => key.startsWith("connectmw_dashboard_active_item:"))
+    .forEach((key) => localStorage.removeItem(key));
+}
+
 function PasswordInput({
   placeholder,
   value,
@@ -324,6 +330,7 @@ export default function AuthCard({ defaultTab = "signin", onAuthenticated }: Aut
         password: signin.password,
       });
       setSuccess("Welcome back! Redirecting…");
+      resetDashboardLanding();
       onAuthenticated?.();
       setTimeout(() => {
         router.push(res.data?.must_change_password ? "/set-password" : "/dashboard");
