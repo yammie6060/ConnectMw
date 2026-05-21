@@ -2,6 +2,7 @@
 
 import { useCallback, useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { withLoading } from "@/components/withLoading";
 import { useTheme } from "./hooks/useTheme";
 import { ROLE_META } from "./config/roles";
 import { ROLE_NAV } from "./config/nav";
@@ -43,7 +44,7 @@ function clearSavedActivePages() {
     .forEach((key) => window.localStorage.removeItem(key));
 }
 
-export default function DashboardPage() {
+function DashboardContent() {
   const router = useRouter();
   const [user, setUser] = useState<SessionUser | null>(null);
   const [loaded, setLoaded] = useState(false);
@@ -51,7 +52,7 @@ export default function DashboardPage() {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  
+
   const userMenuRef = useRef<HTMLDivElement>(null);
   const { navMode, sidebarCollapsed, isMobile, hasSavedNavMode, switchNavMode, toggleSidebar } = useNavMode();
   const { isDarkMode, toggleTheme } = useTheme();
@@ -67,25 +68,30 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    // Add a small delay to ensure session is properly loaded
     const checkSession = async () => {
       await authService.refreshSession().catch(() => null);
       const session = getSession();
-      if (!session) {
-        router.replace("/signin");
-        return;
+      if (!session) { 
+        router.replace("/signin"); 
+        return; 
       }
-      if (session.mustChangePassword) {
-        router.replace("/set-password");
-        return;
+      if (session.mustChangePassword) { 
+        router.replace("/set-password"); 
+        return; 
       }
       setUser(session);
       setActiveItem(getSavedActivePage(session.role));
       setLoaded(true);
     };
-    
     checkSession();
   }, [router]);
+
+  if (!loaded || !user) return null; // Will be handled by withLoading HOC
+
+  const meta = ROLE_META[user.role] || ROLE_META.customer;
+  const navItems = ROLE_NAV[user.role] || ROLE_NAV.customer;
+  const color = !isDarkMode && user.role === "customer" ? "#b45309" : meta.color;
+  const sidebarWidth = sidebarCollapsed ? 72 : 260;
 
   const requestLogout = () => {
     setShowUserMenu(false);
@@ -99,16 +105,14 @@ export default function DashboardPage() {
     router.push("/signin");
   };
 
-  const navigate = useCallback((id: string) => {
-    if (user) {
-      setSavedActivePage(user.role, id);
-    }
+  const navigate = (id: string) => {
+    setSavedActivePage(user.role, id);
     setActiveItem(id);
     setShowUserMenu(false);
     setMobileSidebarOpen(false);
-  }, [user]);
+  };
 
-  const switchWorkspace = useCallback((role: string, providerId: string | null) => {
+  const switchWorkspace = (role: string, providerId: string | null) => {
     setActiveWorkspace(role, providerId);
     const session = getSession();
     if (session) {
@@ -119,55 +123,23 @@ export default function DashboardPage() {
     }
     setShowUserMenu(false);
     setMobileSidebarOpen(false);
-  }, []);
+  };
 
-  const refreshSession = useCallback(() => {
+  const refreshSession = () => {
     const session = getSession();
-    if (session) {
-      setUser(session);
-    }
-  }, []);
+    if (session) setUser(session);
+  };
 
-  const showProfileMenu = useCallback(() => {
+  const showProfileMenu = () => {
     setShowUserMenu(true);
     setMobileSidebarOpen(false);
-  }, []);
-
-  if (!loaded || !user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "#0d1f2d" }}>
-        <div className="flex flex-col items-center gap-3">
-          <svg className="w-16 h-16" viewBox="0 0 64 64" role="img" aria-label="Loading ConnectMW dashboard">
-            <defs>
-              <linearGradient id="connect-loader-gradient" x1="12" x2="52" y1="10" y2="54">
-                <stop stopColor="#1b4f6a" />
-                <stop offset="1" stopColor="#f5ab20" />
-              </linearGradient>
-            </defs>
-            <circle cx="32" cy="32" r="27" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="6" />
-            <path
-              d="M45.5 20.5A18 18 0 1 0 45.5 43.5"
-              fill="none"
-              stroke="url(#connect-loader-gradient)"
-              strokeLinecap="round"
-              strokeWidth="7"
-              style={{ transformBox: "fill-box" }}
-            />
-            <text x="32" y="38" textAnchor="middle" fontSize="22" fontWeight="900" fill="#ffffff" fontFamily="Arial, sans-serif">C</text>
-          </svg>
-          <p className="text-[#8ca5bc] text-sm">Loading Please Wait…</p>
-        </div>
-      </div>
-    );
-  }
-
-  const meta = ROLE_META[user.role] || ROLE_META.customer;
-  const navItems = ROLE_NAV[user.role] || ROLE_NAV.customer;
-  const color = !isDarkMode && user.role === "customer" ? "#b45309" : meta.color;
-  const sidebarWidth = sidebarCollapsed ? 72 : 260;
+  };
 
   return (
-    <div className="flex min-h-screen" style={{ background: "var(--bg-primary, #0d1f2d)", color: "var(--text-primary, white)" }}>
+    <div
+      className="flex min-h-screen"
+      style={{ background: "var(--bg-primary, #0d1f2d)", color: "var(--text-primary, white)" }}
+    >
       <style jsx global>{`
         :root {
           --bg-primary: #0d1f2d;
@@ -181,29 +153,12 @@ export default function DashboardPage() {
           --border-color: rgba(255,255,255,0.07);
           --shadow-color: rgba(0,0,0,0.4);
         }
-        @keyframes slideRight {
-          from { transform: translateX(-100%); opacity: 0; }
-          to   { transform: translateX(0);     opacity: 1; }
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to   { opacity: 1; }
-        }
-        @keyframes slideUp {
-          from { transform: translateY(12px); opacity: 0; }
-          to   { transform: translateY(0);    opacity: 1; }
-        }
-        @keyframes slideDown {
-          from { transform: translateY(-12px); opacity: 0; }
-          to   { transform: translateY(0);     opacity: 1; }
-        }
         ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 4px; }
         ::-webkit-scrollbar-thumb { background: rgba(245,171,32,0.3); border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: rgba(245,171,32,0.5); }
       `}</style>
 
-      {/* Sidebar */}
       <Sidebar
         navMode={navMode}
         isMobile={isMobile}
@@ -216,15 +171,14 @@ export default function DashboardPage() {
         meta={meta}
         onNavigate={navigate}
         onToggleSidebar={toggleSidebar}
-          onCloseMobile={() => setMobileSidebarOpen(false)}
+        onCloseMobile={() => setMobileSidebarOpen(false)}
         onLogout={requestLogout}
       />
 
-      {/* Main Content */}
-      <div className="flex-1 min-h-screen transition-all duration-300"
-        style={{ marginLeft: navMode === "sidebar" && !isMobile ? `${sidebarWidth}px` : 0 }}>
-        
-        {/* Top Bar */}
+      <div
+        className="flex-1 min-h-screen transition-all duration-300"
+        style={{ marginLeft: navMode === "sidebar" && !isMobile ? `${sidebarWidth}px` : 0 }}
+      >
         <TopBar
           navMode={navMode}
           isMobile={isMobile}
@@ -264,13 +218,13 @@ export default function DashboardPage() {
           />
         )}
 
-        {/* Main Content Area */}
-        <main className={`min-h-screen pt-[60px] ${navMode === "bottom" ? "pb-[88px]" : "pb-8"} px-4 sm:px-6 lg:px-8`}
-          style={{ maxWidth: "1240px", margin: "0 auto", width: "100%" }}>
+        <main
+          className={`min-h-screen pt-[60px] ${navMode === "bottom" ? "pb-[88px]" : "pb-8"} px-4 sm:px-6 lg:px-8`}
+          style={{ maxWidth: "1240px", margin: "0 auto", width: "100%" }}
+        >
           {renderPage(activeItem, user, meta, navItems, navigate, isDarkMode, toggleTheme, refreshSession)}
         </main>
 
-        {/* Bottom Navigation */}
         <BottomNav
           navMode={navMode}
           navItems={navItems}
@@ -282,3 +236,6 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+// Export with loading HOC - 5 seconds minimum display time
+export default withLoading(DashboardContent, 5000);

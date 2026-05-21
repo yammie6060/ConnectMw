@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { LoadingScreen } from "@/components/LoadingScreen";
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import Services from "@/components/Services";
@@ -12,7 +13,7 @@ import Contact from "@/components/Contact";
 import Footer from "@/components/Footer";
 import AuthModal from "@/components/AuthModal";
 
-export default function Home() {
+function HomeContent() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authModalTab, setAuthModalTab] = useState<"signin" | "signup">("signup");
 
@@ -47,6 +48,22 @@ export default function Home() {
           </div>
         </div>
       )}
+    </>
+  );
+}
+
+export default function Home() {
+  const [showLoader, setShowLoader] = useState(true);
+
+  return (
+    <>
+      {showLoader && (
+        <LoadingScreen 
+          minDisplayTime={5000} 
+          onLoadingComplete={() => setShowLoader(false)} 
+        />
+      )}
+      {!showLoader && <HomeContent />}
     </>
   );
 }
