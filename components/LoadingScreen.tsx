@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 interface LoadingScreenProps {
-  minDisplayTime?: number; // Minimum time in milliseconds to show loader
+  minDisplayTime?: number; 
   onLoadingComplete?: () => void;
 }
 

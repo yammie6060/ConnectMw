@@ -21,13 +21,27 @@ function money(value?: number | null, unit = "") {
 }
 
 function locationFor(item: ServiceListing) {
-  return [item.street_address, item.city, item.district].filter(Boolean).join(", ") || item.city || "Location not set";
+  return [item.street_address, item.city, item.district].filter(Boolean).join(", ") || item.provider_location || item.provider?.physical_address || item.city || "Location not set";
 }
 
 function metaFor(item: ServiceListing) {
   if (item.kind === "property") return item.bedrooms ? `${item.bedrooms} bed${item.bedrooms === 1 ? "" : "s"}` : item.property_type_display || item.property_type || "Property";
   if (item.kind === "beauty") return item.duration_minutes ? `${item.duration_minutes} min` : item.category_display || item.category || "Service";
   return `${item.quantity ?? 0} in stock`;
+}
+
+function priceFor(item: ServiceListing, unit = "") {
+  if (item.kind === "beauty" && item.price_options?.length) {
+    const prices = item.price_options.filter((option) => option.is_available && option.price != null).map((option) => Number(option.price));
+    if (prices.length) return `From K${Math.min(...prices).toLocaleString()}`;
+  }
+  return money(item.price, unit);
+}
+
+function modeLabel(mode: string) {
+  if (mode === "onsite") return "Onsite";
+  if (mode === "mobile") return "Mobile";
+  return mode;
 }
 
 function ListingCard({ listing, color, isSaved, onToggleSave, onOpen }: { listing: ServiceListing; color: string; isSaved: boolean; onToggleSave: () => void; onOpen: () => void }) {
@@ -90,10 +104,19 @@ function ListingCard({ listing, color, isSaved, onToggleSave, onOpen }: { listin
           <MetaIcon size={10} className="flex-shrink-0" /> 
           {metaFor(listing)}
         </div>
+        {listing.kind === "beauty" && Boolean(listing.service_modes?.length) && (
+          <div className="flex flex-wrap gap-1 mb-3">
+            {listing.service_modes?.map((mode) => (
+              <span key={mode} className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: `${color}15`, color }}>
+                {modeLabel(mode)}
+              </span>
+            ))}
+          </div>
+        )}
         
         <div className="mt-auto flex items-center justify-between gap-2">
           <span className="text-base sm:text-lg font-black" style={{ color }}>
-            {money(listing.price, category === "Rentals" ? "/mo" : "")}
+            {priceFor(listing, category === "Rentals" ? "/mo" : "")}
           </span>
           <button 
             onClick={(event) => { event.stopPropagation(); onOpen(); }} 
@@ -117,11 +140,19 @@ function ListingDetailModal({ listing, color, onClose }: { listing: ServiceListi
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState("");
   const [error, setError] = useState("");
+  const [shopGroups, setShopGroups] = useState<Array<{ name: string; count: number; items: ServiceListing[] }>>([]);
   
   const images = listing.images?.length ? listing.images.map((image) => image.image_url) : listing.primary_image ? [listing.primary_image] : [];
   const category = categoryFor(listing);
   const actionLabel = listing.kind === "property" ? "Send Enquiry" : listing.kind === "beauty" ? "Request Booking" : "Place Order";
   const ActionIcon = listing.kind === "property" ? Send : listing.kind === "beauty" ? CalendarCheck : ShoppingCart;
+
+  useEffect(() => {
+    if (!listing.provider_id) return;
+    providerService.getProviderShop(listing.provider_id, listing.kind)
+      .then((res) => setShopGroups(res.data?.groups ?? []))
+      .catch(() => setShopGroups([]));
+  }, [listing.provider_id, listing.kind]);
 
   const submitAction = async () => {
     setSubmitting(true);
@@ -198,7 +229,7 @@ function ListingDetailModal({ listing, color, onClose }: { listing: ServiceListi
           <div className="lg:w-1/3 flex flex-col gap-4">
             <div>
               <div className="text-2xl sm:text-3xl font-black" style={{ color }}>
-                {money(listing.price, listing.kind === "property" ? "/mo" : "")}
+                {priceFor(listing, listing.kind === "property" ? "/mo" : "")}
               </div>
               <div className="flex items-center gap-1.5 text-xs mt-1.5" style={{ color: "#8ca5bc" }}>
                 <MapPin size={12} className="flex-shrink-0" /> 
@@ -217,6 +248,20 @@ function ListingDetailModal({ listing, color, onClose }: { listing: ServiceListi
                 </div>
               ))}
             </div>
+
+            {listing.kind === "beauty" && Boolean(listing.price_options?.length) && (
+              <div className="grid grid-cols-1 gap-2">
+                {listing.price_options?.filter((option) => option.is_available).map((option) => (
+                  <div key={option.id || option.service_mode} className="rounded-xl p-3 text-xs" style={{ background: "var(--bg-elevated, #1a2e42)", color: "#cde0f0", border: "1px solid rgba(255,255,255,0.06)" }}>
+                    <div className="flex items-center justify-between gap-2 font-bold">
+                      <span>{modeLabel(option.service_mode)}</span>
+                      <span style={{ color }}>{option.price == null ? "Negotiable" : `${option.price_type === "from" ? "From " : ""}K${Number(option.price).toLocaleString()}`}</span>
+                    </div>
+                    {option.location_note && <div className="mt-1" style={{ color: "#8ca5bc" }}>{option.location_note}</div>}
+                  </div>
+                ))}
+              </div>
+            )}
             
             <p className="text-sm leading-relaxed break-words max-h-32 overflow-y-auto" style={{ color: "#cde0f0" }}>
               {listing.description || "No description provided yet."}
@@ -284,6 +329,27 @@ function ListingDetailModal({ listing, color, onClose }: { listing: ServiceListi
               <ActionIcon size={16} /> 
               {submitting ? "Sending..." : actionLabel}
             </button>
+
+            {shopGroups.length > 0 && (
+              <div className="rounded-xl p-3" style={{ background: "var(--bg-elevated, #1a2e42)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                <div className="text-xs font-black mb-2" style={{ color: "var(--text-primary, white)" }}>
+                  More from {listing.provider?.business_name || "this provider"}
+                </div>
+                <div className="flex flex-col gap-2 max-h-44 overflow-y-auto">
+                  {shopGroups.map((group) => (
+                    <div key={group.name}>
+                      <div className="text-[10px] uppercase font-bold mb-1" style={{ color }}>{group.name} ({group.count})</div>
+                      {group.items.slice(0, 3).map((item) => (
+                        <div key={item.id} className="flex items-center justify-between gap-2 text-[11px] py-1" style={{ color: "#cde0f0" }}>
+                          <span className="truncate">{item.title}</span>
+                          <span className="shrink-0" style={{ color: "#8ca5bc" }}>{priceFor(item, item.kind === "property" ? "/mo" : "")}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -329,7 +395,7 @@ export function RentalsPage({ color }: RentalsPageProps) {
   
   const filtered = listings.filter((listing) => {
     const matchCat = category === "All" || categoryFor(listing) === category;
-    const text = `${listing.title} ${listing.provider?.business_name ?? ""} ${locationFor(listing)}`.toLowerCase();
+    const text = `${listing.title} ${listing.provider?.business_name ?? ""} ${locationFor(listing)} ${listing.category_display ?? ""} ${listing.category ?? ""}`.toLowerCase();
     const matchSearch = !search || text.includes(search.toLowerCase());
     const matchSaved = !showSaved || saved.includes(listing.id);
     return matchCat && matchSearch && matchSaved;

@@ -15,6 +15,7 @@ interface AddPartPageProps {
 
 const emptyForm = {
   title: "",
+  category: "Engine Parts",
   vehicle_type: "",
   vehicle_brand: "",
   vehicle_model: "",
@@ -44,6 +45,7 @@ export function AddPartPage({ color, user, editItem, onSaved, onCancel }: AddPar
       setProviderId(editItem.provider_id);
       setForm({
         title: editItem.title ?? "",
+        category: editItem.category ?? "Engine Parts",
         vehicle_type: editItem.vehicle_type ?? "",
         vehicle_brand: editItem.vehicle_brand ?? "",
         vehicle_model: editItem.vehicle_model ?? "",
@@ -125,6 +127,7 @@ export function AddPartPage({ color, user, editItem, onSaved, onCancel }: AddPar
     const payload = {
       provider_id: listingProviderId,
       title: form.title.trim(),
+      category: form.category,
       vehicle_type: form.vehicle_type,
       vehicle_brand: form.vehicle_brand,
       vehicle_model: form.vehicle_model,
@@ -201,6 +204,7 @@ export function AddPartPage({ color, user, editItem, onSaved, onCancel }: AddPar
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div><label style={labelStyle}>Part Name</label><input value={form.part_name} onChange={set("part_name")} placeholder="Side mirror" style={fieldStyle} /></div>
+            <div><label style={labelStyle}>Category</label><select value={form.category} onChange={set("category")} style={fieldStyle}><option>Engine Parts</option><option>Body Parts</option><option>Electrical</option><option>Tyres & Wheels</option><option>Interior</option><option>Service Parts</option><option>Other</option></select></div>
             <div><label style={labelStyle}>Condition</label><select value={form.condition} onChange={set("condition")} style={fieldStyle}><option value="new">New</option><option value="used">Used</option><option value="refurbished">Refurbished</option></select></div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

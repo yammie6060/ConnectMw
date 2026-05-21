@@ -70,6 +70,9 @@ export type ServiceListing = {
   name?: string;
   description?: string | null;
   price?: number | null;
+  base_price?: number | null;
+  price_options?: BeautyPriceOption[];
+  service_modes?: string[];
   city?: string | null;
   district?: string | null;
   street_address?: string | null;
@@ -97,11 +100,24 @@ export type ServiceListing = {
   provider?: {
     id: string;
     business_name: string | null;
+    physical_address?: string | null;
+    is_verified?: boolean;
+    verification_status?: string;
     type: string | null;
     display_name: string | null;
   } | null;
+  provider_location?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
+};
+
+export type BeautyPriceOption = {
+  id?: string;
+  service_mode: "onsite" | "mobile" | string;
+  price_type: "fixed" | "from" | "negotiable" | string;
+  price?: number | null;
+  location_note?: string | null;
+  is_available: boolean;
 };
 
 export type PropertyListingPayload = {
@@ -125,6 +141,7 @@ export type SpareListingPayload = {
   provider_id: string;
   title: string;
   description?: string;
+  category?: string;
   vehicle_type?: string;
   vehicle_brand?: string;
   vehicle_model?: string;
@@ -144,6 +161,7 @@ export type BeautyServicePayload = {
   description?: string;
   duration_minutes?: number | null;
   price?: number | null;
+  price_options?: BeautyPriceOption[];
   is_available: boolean;
   images: Array<{ image_url: string; is_primary?: boolean }>;
 };
@@ -356,6 +374,14 @@ export const providerService = {
   listProviderServices(providerId: string, kind?: "property" | "spare" | "beauty") {
     const query = kind ? `?kind=${kind}` : "";
     return apiRequest<{ items: ServiceListing[]; total: number }>(`/services/provider/${providerId}${query}`, {
+      method: "GET",
+      headers: authHeaders(),
+    });
+  },
+
+  getProviderShop(providerId: string, kind?: "property" | "spare" | "beauty") {
+    const query = kind ? `?kind=${kind}` : "";
+    return apiRequest<{ provider: ServiceListing["provider"]; items: ServiceListing[]; groups: Array<{ name: string; count: number; items: ServiceListing[] }>; total: number }>(`/services/shop/${providerId}${query}`, {
       method: "GET",
       headers: authHeaders(),
     });

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { PageShell } from "../components/PageShell";
 import { Plus, Edit2, Trash2, Clock, Tag, Camera, Check, UploadCloud, X } from "lucide-react";
-import { mediaUrl, providerService, ServiceListing } from "@/services/provider.service";
+import { BeautyPriceOption, mediaUrl, providerService, ServiceListing } from "@/services/provider.service";
 import { SessionUser } from "../types/dashboard";
 import { canActAsStaff, loadStaffProviderOptions, ProviderOption, sessionProviderOptions } from "../utils/providerAccess";
 
@@ -12,10 +12,20 @@ interface PortfolioPageProps {
 }
 
 const DEFAULT_CATEGORIES = ["hair", "barber", "nails", "makeup", "spa"];
-const emptyForm = { name: "", category: "hair", price: "", duration_minutes: "", description: "", image_urls: [] as string[], is_available: true };
+const defaultPriceOptions: BeautyPriceOption[] = [
+  { service_mode: "onsite", price_type: "fixed", price: null, location_note: "At shop or salon", is_available: true },
+  { service_mode: "mobile", price_type: "from", price: null, location_note: "Depends on customer location", is_available: false },
+];
+const emptyForm = { name: "", category: "hair", price: "", duration_minutes: "", description: "", image_urls: [] as string[], price_options: defaultPriceOptions, is_available: true };
 
 function money(value?: number | null) {
   return value == null ? "Price not set" : `K${value.toLocaleString()}`;
+}
+
+function priceOptionLabel(option: BeautyPriceOption) {
+  const mode = option.service_mode === "onsite" ? "Onsite" : option.service_mode === "mobile" ? "Mobile" : option.service_mode;
+  const price = option.price == null ? "negotiable" : `${option.price_type === "from" ? "from " : ""}${money(option.price)}`;
+  return `${mode}: ${price}`;
 }
 
 export function PortfolioPage({ color, user, initialShowAdd = false }: PortfolioPageProps) {
@@ -86,13 +96,14 @@ export function PortfolioPage({ color, user, initialShowAdd = false }: Portfolio
       duration_minutes: service.duration_minutes != null ? String(service.duration_minutes) : "",
       description: service.description || "",
       image_urls: service.images?.length ? service.images.map((image) => image.image_url) : service.primary_image ? [service.primary_image] : [],
+      price_options: service.price_options?.length ? service.price_options : defaultPriceOptions.map((option) => ({ ...option })),
       is_available: service.is_available,
     });
   };
 
   const resetForm = () => {
     setEditing(null);
-    setForm(emptyForm);
+    setForm({ ...emptyForm, price_options: defaultPriceOptions.map((option) => ({ ...option })) });
     setShowAdd(false);
   };
 
@@ -130,6 +141,9 @@ export function PortfolioPage({ color, user, initialShowAdd = false }: Portfolio
       description: form.description,
       duration_minutes: form.duration_minutes ? Number(form.duration_minutes) : null,
       price: form.price ? Number(form.price) : null,
+      price_options: form.price_options
+        .filter((option) => option.is_available || option.price != null)
+        .map((option) => ({ ...option, price: option.price == null ? null : Number(option.price) })),
       is_available: form.is_available,
       images: form.image_urls.map((image_url, index) => ({ image_url, is_primary: index === 0 })),
     };
@@ -166,6 +180,12 @@ export function PortfolioPage({ color, user, initialShowAdd = false }: Portfolio
   };
 
   const removeImage = (url: string) => setForm((current) => ({ ...current, image_urls: current.image_urls.filter((image) => image !== url) }));
+  const updatePriceOption = (index: number, key: keyof BeautyPriceOption, value: string | boolean | number | null) => {
+    setForm((current) => ({
+      ...current,
+      price_options: current.price_options.map((option, idx) => idx === index ? { ...option, [key]: value } : option),
+    }));
+  };
 
   const deleteItem = async (service: ServiceListing) => {
     await providerService.deleteListing("beauty", service.id);
@@ -217,6 +237,25 @@ export function PortfolioPage({ color, user, initialShowAdd = false }: Portfolio
             <div><label className="block text-[10px] font-semibold mb-1 uppercase" style={labelStyle}>Images</label><input type="file" accept="image/*" multiple onChange={(e) => uploadImages(e.target.files)} style={fieldStyle} />{uploading && <div className="text-[10px] mt-1" style={{ color: "#8ca5bc" }}>Uploading...</div>}</div>
             <div><label className="block text-[10px] font-semibold mb-1 uppercase" style={labelStyle}>Price (MWK)</label><input type="number" value={form.price} onChange={set("price")} style={fieldStyle} /></div>
             <div><label className="block text-[10px] font-semibold mb-1 uppercase" style={labelStyle}>Duration Minutes</label><input type="number" value={form.duration_minutes} onChange={set("duration_minutes")} placeholder="60" style={fieldStyle} /></div>
+            <div className="col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {form.price_options.map((option, index) => (
+                <div key={option.service_mode} className="rounded-xl p-3" style={{ background: "var(--bg-elevated, #1a2e42)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                  <label className="flex items-center justify-between gap-2 text-xs font-bold mb-2" style={{ color: "var(--text-primary, white)" }}>
+                    <span>{option.service_mode === "onsite" ? "Onsite / shop price" : "Mobile service price"}</span>
+                    <input type="checkbox" checked={option.is_available} onChange={(e) => updatePriceOption(index, "is_available", e.target.checked)} />
+                  </label>
+                  <div className="grid grid-cols-2 gap-2 mb-2">
+                    <select value={option.price_type} onChange={(e) => updatePriceOption(index, "price_type", e.target.value)} style={fieldStyle}>
+                      <option value="fixed">Fixed</option>
+                      <option value="from">From</option>
+                      <option value="negotiable">Negotiable</option>
+                    </select>
+                    <input type="number" value={option.price ?? ""} onChange={(e) => updatePriceOption(index, "price", e.target.value ? Number(e.target.value) : null)} placeholder="MWK" style={fieldStyle} />
+                  </div>
+                  <input value={option.location_note ?? ""} onChange={(e) => updatePriceOption(index, "location_note", e.target.value)} placeholder="Location note" style={fieldStyle} />
+                </div>
+              ))}
+            </div>
             <div className="col-span-2"><label className="block text-[10px] font-semibold mb-1 uppercase" style={labelStyle}>Description</label><textarea value={form.description} onChange={set("description")} rows={2} style={{ ...fieldStyle, resize: "none" }} /></div>
             <label className="col-span-2 flex items-center gap-2 text-xs font-semibold" style={{ color: "#8ca5bc" }}><input type="checkbox" checked={form.is_available} onChange={set("is_available")} /> Published and available for browsing</label>
           </div>
@@ -259,6 +298,15 @@ export function PortfolioPage({ color, user, initialShowAdd = false }: Portfolio
                 <span className="flex items-center gap-1 text-[11px]" style={{ color: "#8ca5bc" }}><Clock size={10} /> {item.duration_minutes ? `${item.duration_minutes} min` : "Duration not set"}</span>
                 <span className="text-sm font-black" style={{ color }}>{money(item.price)}</span>
               </div>
+              {Boolean(item.price_options?.length) && (
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {item.price_options?.filter((option) => option.is_available).map((option) => (
+                    <span key={`${item.id}-${option.service_mode}`} className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: "rgba(255,255,255,0.06)", color: "#cde0f0" }}>
+                      {priceOptionLabel(option)}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         ))}
