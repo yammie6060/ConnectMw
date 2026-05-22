@@ -12,17 +12,16 @@ import {
   Eye,
   EyeOff,
   Loader2,
-  type LucideProps,  // Import LucideProps type
+  type LucideProps,
 } from "lucide-react";
 import { ApiError } from "@/services/api";
 import { authService, RegisterPayload, RegisterData } from "@/services/auth.service";
 import { providerService, ProviderTypeOption } from "@/services/provider.service";
 
-
 type AccountTypeOption = {
-  value: string;         
+  value: string;
   label: string;
-  icon: ComponentType<LucideProps>;  // Use LucideProps instead of custom type
+  icon: ComponentType<LucideProps>;
 };
 
 type View = "signin" | "signup" | "forgotPassword" | "verifyEmail";
@@ -41,7 +40,6 @@ interface AuthCardProps {
   onAuthenticated?: () => void;
 }
 
-// Fix: Use LucideProps for the icon type
 const ICON_MAP: Record<string, ComponentType<LucideProps>> = {
   customer: User2,
   spare_seller: Wrench,
@@ -63,28 +61,13 @@ function getErrorMessage(err: unknown): string {
   return "Something went wrong. Please try again.";
 }
 
-function applyTheme() {
-  const isLight = localStorage.getItem("connectmw_theme") === "light";
-  const r = document.documentElement;
-  r.style.setProperty("--bg-primary", isLight ? "#f3f4f6" : "#0d1f2d");
-  r.style.setProperty("--bg-secondary", isLight ? "#ffffff" : "#132333");
-  r.style.setProperty("--bg-elevated", isLight ? "#f8fafc" : "#1a2e42");
-  r.style.setProperty("--bg-muted", isLight ? "#eef2f7" : "rgba(255,255,255,0.05)");
-  r.style.setProperty("--text-primary", isLight ? "#111827" : "#ffffff");
-  r.style.setProperty("--text-secondary", isLight ? "#6b7280" : "#8ca5bc");
-  r.style.setProperty("--text-soft", isLight ? "#334155" : "#cde0f0");
-  r.style.setProperty("--accent", isLight ? "#b45309" : "#f5ab20");
-  r.style.setProperty("--border", isLight ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.1)");
-  r.style.setProperty("--shadow", isLight ? "rgba(15,23,42,0.14)" : "rgba(0,0,0,0.5)");
-  document.body.style.background = isLight ? "#f3f4f6" : "#0d1f2d";
-  document.body.style.color = isLight ? "#111827" : "#ffffff";
-}
-
 function resetDashboardLanding() {
   Object.keys(localStorage)
     .filter((key) => key.startsWith("connectmw_dashboard_active_item:"))
     .forEach((key) => localStorage.removeItem(key));
 }
+
+// ── Sub-components ────────────────────────────────────────────────────────────
 
 function PasswordInput({
   placeholder,
@@ -99,33 +82,21 @@ function PasswordInput({
 }) {
   const [show, setShow] = useState(false);
   return (
-    <div style={{ position: "relative" }}>
+    <div className="relative">
       <input
         type={show ? "text" : "password"}
-        className="c-input"
+        className="c-input pr-10"
         placeholder={placeholder}
         value={value}
         onChange={onChange}
         required={required}
-        style={{ paddingRight: "2.5rem" }}
       />
       <button
         type="button"
         onClick={() => setShow((s) => !s)}
         tabIndex={-1}
         aria-label={show ? "Hide password" : "Show password"}
-        style={{
-          position: "absolute",
-          right: "0.7rem",
-          top: "50%",
-          transform: "translateY(-50%)",
-          background: "none",
-          border: "none",
-          cursor: "pointer",
-          color: "var(--text-secondary)",
-          padding: 0,
-          display: "flex",
-        }}
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors"
       >
         {show ? <EyeOff size={15} /> : <Eye size={15} />}
       </button>
@@ -133,96 +104,136 @@ function PasswordInput({
   );
 }
 
-function FormGroup({ label, helper, children }: { label: string; helper?: string; children: ReactNode }) {
+function FormGroup({
+  label,
+  helper,
+  children,
+}: {
+  label: string;
+  helper?: string;
+  children: ReactNode;
+}) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem", marginBottom: "1rem", flex: 1 }}>
-      <label style={{ fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.04em", color: "var(--text-secondary)" }}>
+    <div className="flex flex-col gap-1.5 mb-4 flex-1">
+      <label className="text-xs font-semibold tracking-wide text-slate-400 uppercase">
         {label}
       </label>
       {children}
-      {helper && <span style={{ fontSize: "0.7rem", color: "var(--text-secondary)" }}>{helper}</span>}
+      {helper && <span className="text-xs text-slate-500">{helper}</span>}
     </div>
   );
 }
 
-function SubmitButton({ children, disabled }: { children: ReactNode; disabled?: boolean }) {
+function SubmitButton({
+  children,
+  disabled,
+}: {
+  children: ReactNode;
+  disabled?: boolean;
+}) {
   return (
     <button
       type="submit"
       disabled={disabled}
-      style={{
-        width: "100%",
-        padding: "0.75rem",
-        borderRadius: 999,
-        fontSize: "0.92rem",
-        fontWeight: 700,
-        border: "none",
-        cursor: disabled ? "not-allowed" : "pointer",
-        background: "var(--accent)",
-        color: "#fff",
-        opacity: disabled ? 0.55 : 1,
-        transition: "transform 0.15s, opacity 0.15s",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: "0.5rem",
-      }}
+      className="w-full py-3 rounded-full text-sm font-bold border-none cursor-pointer
+        bg-amber-500 text-white transition-all duration-150
+        disabled:opacity-50 disabled:cursor-not-allowed
+        hover:bg-amber-400 active:scale-[0.98]
+        flex items-center justify-center gap-2"
     >
       {children}
     </button>
   );
 }
 
-function Alert({ type, message }: { type: "error" | "success"; message: string }) {
+function Alert({
+  type,
+  message,
+}: {
+  type: "error" | "success";
+  message: string;
+}) {
   return (
     <div
-      style={{
-        borderRadius: 10,
-        padding: "0.65rem 1rem",
-        fontSize: "0.82rem",
-        fontWeight: 600,
-        textAlign: "center",
-        marginBottom: "0.85rem",
-        background: type === "error" ? "rgba(239,68,68,0.15)" : "rgba(16,185,129,0.15)",
-        border: `1px solid ${type === "error" ? "rgba(239,68,68,0.35)" : "rgba(16,185,129,0.35)"}`,
-        color: type === "error" ? "#f87171" : "#34d399",
-      }}
+      className={`rounded-xl px-4 py-2.5 text-sm font-semibold text-center mb-4 border
+        ${
+          type === "error"
+            ? "bg-red-500/15 border-red-500/35 text-red-400"
+            : "bg-emerald-500/15 border-emerald-500/35 text-emerald-400"
+        }`}
     >
       {message}
     </div>
   );
 }
 
-function Tab({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+function Tab({
+  label,
+  active,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
   return (
     <button
       type="button"
       onClick={onClick}
-      style={{
-        flex: 1,
-        paddingBottom: "0.75rem",
-        textAlign: "center",
-        fontWeight: 700,
-        fontSize: "0.88rem",
-        background: "transparent",
-        border: "none",
-        cursor: "pointer",
-        color: active ? "var(--accent)" : "var(--text-secondary)",
-        borderBottom: active ? "2px solid var(--accent)" : "2px solid transparent",
-        marginBottom: "-1px",
-        transition: "color 0.2s",
-      }}
+      className={`flex-1 pb-3 text-center font-bold text-sm bg-transparent border-none cursor-pointer
+        transition-colors duration-200 -mb-px border-b-2
+        ${
+          active
+            ? "text-amber-400 border-amber-400"
+            : "text-slate-500 border-transparent hover:text-slate-300"
+        }`}
     >
       {label}
     </button>
   );
 }
 
-export default function AuthCard({ defaultTab = "signin", onAuthenticated }: AuthCardProps) {
+function IconBox({ emoji }: { emoji: string }) {
+  return (
+    <div className="w-14 h-14 rounded-2xl mx-auto mb-3 flex items-center justify-center text-2xl bg-amber-500/10 border border-amber-500/25">
+      {emoji}
+    </div>
+  );
+}
+
+function LinkButton({
+  children,
+  onClick,
+  className = "",
+}: {
+  children: ReactNode;
+  onClick: () => void;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`bg-transparent border-none cursor-pointer text-amber-400 font-semibold p-0
+        hover:underline transition-colors ${className}`}
+    >
+      {children}
+    </button>
+  );
+}
+
+// ── Main Component ────────────────────────────────────────────────────────────
+
+export default function AuthCard({
+  defaultTab = "signin",
+  onAuthenticated,
+}: AuthCardProps) {
   const router = useRouter();
 
   const [view, setView] = useState<View>(defaultTab);
-  const [accountTypes, setAccountTypes] = useState<AccountTypeOption[]>([CUSTOMER_OPTION]);
+  const [accountTypes, setAccountTypes] = useState<AccountTypeOption[]>([
+    CUSTOMER_OPTION,
+  ]);
   const [typesLoading, setTypesLoading] = useState(true);
 
   const [signup, setSignup] = useState<SignupFormData>({
@@ -237,7 +248,8 @@ export default function AuthCard({ defaultTab = "signin", onAuthenticated }: Aut
 
   const [verificationEmail, setVerificationEmail] = useState("");
   const [verificationCode, setVerificationCode] = useState("");
-  const [pendingProviderInfo, setPendingProviderInfo] = useState<RegisterData | null>(null);
+  const [pendingProviderInfo, setPendingProviderInfo] =
+    useState<RegisterData | null>(null);
 
   const [forgotEmail, setForgotEmail] = useState("");
   const [resetCode, setResetCode] = useState("");
@@ -250,25 +262,21 @@ export default function AuthCard({ defaultTab = "signin", onAuthenticated }: Aut
   const [success, setSuccess] = useState("");
 
   useEffect(() => {
-    applyTheme();
-  }, []);
-
-  useEffect(() => {
     providerService
       .getProviderTypes()
       .then((res) => {
         if (res.data && Array.isArray(res.data)) {
-          const dynamic: AccountTypeOption[] = res.data.map((pt: ProviderTypeOption) => ({
-            value: pt.name,
-            label: pt.display_name,
-            icon: ICON_MAP[pt.name] || User2,
-          }));
+          const dynamic: AccountTypeOption[] = res.data.map(
+            (pt: ProviderTypeOption) => ({
+              value: pt.name,
+              label: pt.display_name,
+              icon: ICON_MAP[pt.name] || User2,
+            })
+          );
           setAccountTypes([CUSTOMER_OPTION, ...dynamic]);
         }
       })
-      .catch(() => {
-        setAccountTypes([CUSTOMER_OPTION]);
-      })
+      .catch(() => setAccountTypes([CUSTOMER_OPTION]))
       .finally(() => setTypesLoading(false));
   }, []);
 
@@ -285,6 +293,8 @@ export default function AuthCard({ defaultTab = "signin", onAuthenticated }: Aut
 
   const isProvider = signup.account_type !== "customer";
   const selectedType = accountTypes.find((t) => t.value === signup.account_type);
+
+  // ── Handlers ────────────────────────────────────────────────────────────────
 
   const handleSignup = async (e: FormEvent) => {
     e.preventDefault();
@@ -323,7 +333,6 @@ export default function AuthCard({ defaultTab = "signin", onAuthenticated }: Aut
     setSubmitting(true);
     setError("");
     setSuccess("");
-
     try {
       const res = await authService.login({
         email: signin.email.trim(),
@@ -333,7 +342,9 @@ export default function AuthCard({ defaultTab = "signin", onAuthenticated }: Aut
       resetDashboardLanding();
       onAuthenticated?.();
       setTimeout(() => {
-        router.push(res.data?.must_change_password ? "/set-password" : "/dashboard");
+        router.push(
+          res.data?.must_change_password ? "/set-password" : "/dashboard"
+        );
         router.refresh();
       }, 700);
     } catch (err) {
@@ -352,17 +363,17 @@ export default function AuthCard({ defaultTab = "signin", onAuthenticated }: Aut
     setSubmitting(true);
     setError("");
     setSuccess("");
-
     try {
-      const res = await authService.verifyEmail(verificationEmail.trim(), verificationCode.trim());
+      const res = await authService.verifyEmail(
+        verificationEmail.trim(),
+        verificationCode.trim()
+      );
       setSuccess(res.message);
       setVerificationCode("");
-
       setTimeout(() => {
         const providerId =
           pendingProviderInfo?.provider_info?.provider_id ??
           res.data?.user.providers?.[0]?.id;
-
         if (providerId) {
           router.push(`/dashboard/provider-setup/${providerId}`);
         } else {
@@ -386,7 +397,9 @@ export default function AuthCard({ defaultTab = "signin", onAuthenticated }: Aut
     setError("");
     setSuccess("");
     try {
-      const res = await authService.resendVerification(verificationEmail.trim());
+      const res = await authService.resendVerification(
+        verificationEmail.trim()
+      );
       setSuccess(res.message);
     } catch (err) {
       setError(getErrorMessage(err));
@@ -425,7 +438,11 @@ export default function AuthCard({ defaultTab = "signin", onAuthenticated }: Aut
     setError("");
     setSuccess("");
     try {
-      const res = await authService.resetPassword(forgotEmail.trim(), resetCode.trim(), newPassword);
+      const res = await authService.resetPassword(
+        forgotEmail.trim(),
+        resetCode.trim(),
+        newPassword
+      );
       setSuccess(res.message);
       setTimeout(() => {
         setResetStep("request");
@@ -438,127 +455,86 @@ export default function AuthCard({ defaultTab = "signin", onAuthenticated }: Aut
     }
   };
 
+  // ── Render ───────────────────────────────────────────────────────────────────
+
   return (
     <>
-      <style jsx global>{`
-        @keyframes scaleIn {
-          from { opacity: 0; transform: scale(0.96); }
-          to { opacity: 1; transform: scale(1); }
-        }
-        @keyframes slideDown {
-          from { opacity: 0; transform: translateY(-8px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        .animate-spin {
-          animation: spin 1s linear infinite;
-        }
+      {/* Shared input styles via a scoped global — keeps Tailwind clean */}
+      <style>{`
         .c-input {
           width: 100%;
-          background: var(--bg-elevated);
-          border: 1.5px solid var(--border);
+          background: rgb(26 46 66 / 0.6);
+          border: 1.5px solid rgb(255 255 255 / 0.1);
           border-radius: 10px;
-          color: var(--text-primary);
+          color: #fff;
           padding: 0.68rem 0.9rem;
           font-size: 0.875rem;
-          font-family: "DM Sans", sans-serif;
           outline: none;
           transition: border-color 0.18s, background 0.18s;
           box-sizing: border-box;
         }
         .c-input:focus {
-          border-color: var(--accent);
-          background: color-mix(in srgb, var(--accent) 5%, var(--bg-secondary));
+          border-color: #f5ab20;
+          background: rgb(245 171 32 / 0.06);
         }
-        .c-input::placeholder {
-          color: var(--text-secondary);
+        .c-input::placeholder { color: #64748b; }
+        .c-input option { background: #132333; color: #fff; }
+        @keyframes scaleIn {
+          from { opacity: 0; transform: scale(0.96); }
+          to   { opacity: 1; transform: scale(1); }
         }
-        .c-input option {
-          background: var(--bg-secondary);
-          color: var(--text-primary);
+        @keyframes slideDown {
+          from { opacity: 0; transform: translateY(-8px); }
+          to   { opacity: 1; transform: translateY(0); }
         }
-        .grid2 {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 0.85rem;
-        }
-        @media (max-width: 520px) {
-          .grid2 {
-            grid-template-columns: 1fr;
-            gap: 0.7rem;
-          }
-        }
-        .provider-badge {
-          display: inline-flex;
-          align-items: center;
-          gap: 0.45rem;
-          background: color-mix(in srgb, var(--accent) 10%, transparent);
-          border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
-          border-radius: 8px;
-          padding: 0.45rem 0.75rem;
-          font-size: 0.76rem;
-          color: var(--accent);
-          margin-bottom: 1rem;
-          animation: slideDown 0.2s ease;
-        }
-        .link-btn {
-          background: none;
-          border: none;
-          cursor: pointer;
-          color: var(--accent);
-          font-weight: 600;
-          font-size: inherit;
-          padding: 0;
-          text-decoration: none;
-        }
-        .link-btn:hover {
-          text-decoration: underline;
-        }
+        .animate-scale-in { animation: scaleIn 0.22s ease both; }
+        .animate-slide-down { animation: slideDown 0.2s ease; }
       `}</style>
 
+      {/* Radial glow backdrop */}
       <div
         aria-hidden
+        className="fixed inset-0 -z-10 pointer-events-none"
         style={{
-          position: "fixed",
-          inset: 0,
-          zIndex: -1,
-          pointerEvents: "none",
-          background: "radial-gradient(ellipse at center, color-mix(in srgb, var(--accent) 16%, transparent) 0%, transparent 62%)",
+          background:
+            "radial-gradient(ellipse at center, rgb(245 171 32 / 0.12) 0%, transparent 62%)",
         }}
       />
 
-      <div style={{ width: "100%", display: "flex", justifyContent: "center", alignItems: "center", minHeight: "calc(100dvh - 180px)", padding: "2rem 1rem" }}>
+      {/* Page wrapper */}
+      <div className="w-full flex justify-center items-center min-h-[calc(100dvh-180px)] px-4 py-8">
+        {/* Card */}
         <div
-          style={{
-            width: "100%",
-            maxWidth: 560,
-            background: "var(--bg-secondary)",
-            border: "1px solid var(--border)",
-            borderRadius: 20,
-            boxShadow: "0 24px 60px var(--shadow)",
-            animation: "scaleIn 0.22s ease both",
-            maxHeight: "calc(100dvh - 2rem)",
-            overflowY: "auto",
-          }}
+          className="animate-scale-in w-full max-w-[560px] bg-[#132333] border border-white/10
+            rounded-[20px] shadow-[0_24px_60px_rgba(0,0,0,0.5)]
+            max-h-[calc(100dvh-2rem)] overflow-y-auto"
         >
-          <div style={{ padding: "2rem 2.25rem" }}>
-            <div style={{ fontWeight: 900, fontSize: "1.4rem", letterSpacing: "-0.02em", marginBottom: "0.2rem", color: "var(--text-primary)" }}>
-              Connect<span style={{ color: "var(--accent)" }}>MW</span>
+          <div className="p-8 sm:p-9">
+            {/* Brand */}
+            <div className="font-black text-[1.4rem] tracking-tight text-white mb-1">
+              Connect<span className="text-amber-400">MW</span>
             </div>
-            <p style={{ fontSize: "0.82rem", color: "var(--text-secondary)", marginBottom: "1.5rem" }}>
+            <p className="text-xs text-slate-400 mb-6">
               Your all-in-one local services platform
             </p>
 
+            {/* Tabs */}
             {(view === "signin" || view === "signup") && (
-              <div style={{ display: "flex", borderBottom: "1px solid var(--border)", marginBottom: "1.5rem" }}>
-                <Tab label="Sign In" active={view === "signin"} onClick={() => switchView("signin")} />
-                <Tab label="Sign Up" active={view === "signup"} onClick={() => switchView("signup")} />
+              <div className="flex border-b border-white/10 mb-6">
+                <Tab
+                  label="Sign In"
+                  active={view === "signin"}
+                  onClick={() => switchView("signin")}
+                />
+                <Tab
+                  label="Sign Up"
+                  active={view === "signup"}
+                  onClick={() => switchView("signup")}
+                />
               </div>
             )}
 
+            {/* ── Sign In ── */}
             {view === "signin" && (
               <form onSubmit={handleSignin} noValidate>
                 {error && <Alert type="error" message={error} />}
@@ -590,39 +566,47 @@ export default function AuthCard({ defaultTab = "signin", onAuthenticated }: Aut
                   />
                 </FormGroup>
 
-                <div style={{ textAlign: "right", marginBottom: "1.25rem", marginTop: "-0.5rem" }}>
-                  <button type="button" className="link-btn" style={{ fontSize: "0.8rem" }} onClick={() => switchView("forgotPassword")}>
+                <div className="text-right mb-5 -mt-2">
+                  <LinkButton
+                    onClick={() => switchView("forgotPassword")}
+                    className="text-xs text-slate-400 hover:text-amber-400"
+                  >
                     Forgot password?
-                  </button>
+                  </LinkButton>
                 </div>
 
                 <SubmitButton disabled={submitting}>
-                  {submitting && <Loader2 size={15} className="animate-spin" />}
+                  {submitting && (
+                    <Loader2 size={15} className="animate-spin" />
+                  )}
                   {submitting ? "Signing In…" : "Sign In →"}
                 </SubmitButton>
 
-                <p style={{ textAlign: "center", marginTop: "1rem", fontSize: "0.82rem", color: "var(--text-secondary)" }}>
+                <p className="text-center mt-4 text-xs text-slate-400">
                   Don&apos;t have an account?{" "}
-                  <button type="button" className="link-btn" onClick={() => switchView("signup")}>
+                  <LinkButton onClick={() => switchView("signup")}>
                     Sign up free
-                  </button>
+                  </LinkButton>
                 </p>
               </form>
             )}
 
+            {/* ── Sign Up ── */}
             {view === "signup" && (
               <form onSubmit={handleSignup} noValidate>
                 {error && <Alert type="error" message={error} />}
                 {success && <Alert type="success" message={success} />}
 
-                <div className="grid2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <FormGroup label="First Name">
                     <input
                       type="text"
                       className="c-input"
                       placeholder="Tawonga"
                       value={signup.first_name}
-                      onChange={(e) => setSignupField("first_name", e.target.value)}
+                      onChange={(e) =>
+                        setSignupField("first_name", e.target.value)
+                      }
                       required
                     />
                   </FormGroup>
@@ -632,13 +616,15 @@ export default function AuthCard({ defaultTab = "signin", onAuthenticated }: Aut
                       className="c-input"
                       placeholder="Mbewe"
                       value={signup.last_name}
-                      onChange={(e) => setSignupField("last_name", e.target.value)}
+                      onChange={(e) =>
+                        setSignupField("last_name", e.target.value)
+                      }
                       required
                     />
                   </FormGroup>
                 </div>
 
-                <div className="grid2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <FormGroup label="Email Address">
                     <input
                       type="email"
@@ -649,7 +635,10 @@ export default function AuthCard({ defaultTab = "signin", onAuthenticated }: Aut
                       required
                     />
                   </FormGroup>
-                  <FormGroup label="Phone Number" helper="Use +265 or 0 followed by 9 digits.">
+                  <FormGroup
+                    label="Phone Number"
+                    helper="Use +265 or 0 followed by 9 digits."
+                  >
                     <input
                       type="tel"
                       className="c-input"
@@ -661,10 +650,10 @@ export default function AuthCard({ defaultTab = "signin", onAuthenticated }: Aut
                   </FormGroup>
                 </div>
 
-                <div className="grid2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <FormGroup label="Account Type">
                     {typesLoading ? (
-                      <div className="c-input" style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--text-secondary)" }}>
+                      <div className="c-input flex items-center gap-2 text-slate-400">
                         <Loader2 size={14} className="animate-spin" />
                         <span>Loading…</span>
                       </div>
@@ -672,7 +661,9 @@ export default function AuthCard({ defaultTab = "signin", onAuthenticated }: Aut
                       <select
                         className="c-input"
                         value={signup.account_type}
-                        onChange={(e) => setSignupField("account_type", e.target.value)}
+                        onChange={(e) =>
+                          setSignupField("account_type", e.target.value)
+                        }
                         required
                       >
                         {accountTypes.map((t) => (
@@ -688,71 +679,66 @@ export default function AuthCard({ defaultTab = "signin", onAuthenticated }: Aut
                     <PasswordInput
                       placeholder="Create a strong password"
                       value={signup.password}
-                      onChange={(e) => setSignupField("password", e.target.value)}
+                      onChange={(e) =>
+                        setSignupField("password", e.target.value)
+                      }
                       required
                     />
                   </FormGroup>
                 </div>
 
                 {isProvider && selectedType && (
-                  <div className="provider-badge">
+                  <div className="animate-slide-down inline-flex items-center gap-2 mb-4
+                    bg-amber-500/10 border border-amber-500/28 rounded-lg
+                    px-3 py-2 text-xs text-amber-400">
                     {(() => {
                       const Icon = selectedType.icon;
                       return <Icon size={14} strokeWidth={2} />;
                     })()}
                     <span>
-                      Registering as <strong>{selectedType.label}</strong>
+                      Registering as{" "}
+                      <strong className="font-semibold">{selectedType.label}</strong>
                     </span>
                   </div>
                 )}
 
                 <SubmitButton disabled={submitting || typesLoading}>
-                  {submitting && <Loader2 size={15} className="animate-spin" />}
+                  {submitting && (
+                    <Loader2 size={15} className="animate-spin" />
+                  )}
                   {submitting ? "Creating Account…" : "Create Account →"}
                 </SubmitButton>
 
-                <p style={{ textAlign: "center", marginTop: "1rem", fontSize: "0.82rem", color: "var(--text-secondary)" }}>
+                <p className="text-center mt-4 text-xs text-slate-400">
                   Already have an account?{" "}
-                  <button type="button" className="link-btn" onClick={() => switchView("signin")}>
+                  <LinkButton onClick={() => switchView("signin")}>
                     Sign in
-                  </button>
+                  </LinkButton>
                 </p>
               </form>
             )}
 
+            {/* ── Verify Email ── */}
             {view === "verifyEmail" && (
               <form onSubmit={handleVerifyEmail}>
-                <button
-                  type="button"
-                  className="link-btn"
-                  style={{ fontSize: "0.82rem", color: "var(--text-secondary)", marginBottom: "1.25rem", display: "block" }}
+                <LinkButton
                   onClick={() => switchView("signin")}
+                  className="text-xs text-slate-400 mb-5 block"
                 >
                   ← Back to Sign In
-                </button>
+                </LinkButton>
 
-                <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
-                  <div
-                    style={{
-                      width: 56,
-                      height: 56,
-                      borderRadius: 14,
-                      margin: "0 auto 0.75rem",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: "1.6rem",
-                      background: "color-mix(in srgb, var(--accent) 10%, transparent)",
-                      border: "1px solid color-mix(in srgb, var(--accent) 24%, transparent)",
-                    }}
-                  >
-                    📧
-                  </div>
-                  <h3 style={{ fontWeight: 700, fontSize: "1.1rem", color: "var(--text-primary)", marginBottom: "0.35rem" }}>
+                <div className="text-center mb-6">
+                  <IconBox emoji="📧" />
+                  <h3 className="font-bold text-lg text-white mb-1.5">
                     Check Your Email
                   </h3>
-                  <p style={{ fontSize: "0.84rem", color: "var(--text-secondary)" }}>
-                    Enter the 6-digit code sent to <strong>{verificationEmail || "your email"}</strong>.
+                  <p className="text-sm text-slate-400">
+                    Enter the 6-digit code sent to{" "}
+                    <strong className="text-white font-semibold">
+                      {verificationEmail || "your email"}
+                    </strong>
+                    .
                   </p>
                 </div>
 
@@ -776,7 +762,9 @@ export default function AuthCard({ defaultTab = "signin", onAuthenticated }: Aut
                     className="c-input"
                     placeholder="123456"
                     value={verificationCode}
-                    onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ""))}
+                    onChange={(e) =>
+                      setVerificationCode(e.target.value.replace(/\D/g, ""))
+                    }
                     maxLength={6}
                     inputMode="numeric"
                     required
@@ -784,53 +772,42 @@ export default function AuthCard({ defaultTab = "signin", onAuthenticated }: Aut
                 </FormGroup>
 
                 <SubmitButton disabled={submitting}>
-                  {submitting && <Loader2 size={15} className="animate-spin" />}
+                  {submitting && (
+                    <Loader2 size={15} className="animate-spin" />
+                  )}
                   {submitting ? "Verifying…" : "Verify Email →"}
                 </SubmitButton>
 
-                <p style={{ textAlign: "center", marginTop: "0.85rem", fontSize: "0.8rem" }}>
+                <p className="text-center mt-3 text-xs text-slate-400">
                   Didn&apos;t receive it?{" "}
-                  <button type="button" className="link-btn" style={{ fontSize: "0.8rem" }} onClick={handleResendVerification}>
+                  <LinkButton
+                    onClick={handleResendVerification}
+                    className="text-xs"
+                  >
                     Send a new code
-                  </button>
+                  </LinkButton>
                 </p>
               </form>
             )}
 
+            {/* ── Forgot Password ── */}
             {view === "forgotPassword" && (
               <div>
-                <button
-                  type="button"
-                  className="link-btn"
-                  style={{ fontSize: "0.82rem", color: "var(--text-secondary)", marginBottom: "1.25rem", display: "block" }}
+                <LinkButton
                   onClick={() => switchView("signin")}
+                  className="text-xs text-slate-400 mb-5 block"
                 >
                   ← Back to Sign In
-                </button>
+                </LinkButton>
 
                 {resetStep === "request" ? (
                   <form onSubmit={handleForgotPassword} noValidate>
-                    <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
-                      <div
-                        style={{
-                          width: 56,
-                          height: 56,
-                          borderRadius: 14,
-                          margin: "0 auto 0.75rem",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontSize: "1.6rem",
-                          background: "color-mix(in srgb, var(--accent) 10%, transparent)",
-                          border: "1px solid color-mix(in srgb, var(--accent) 24%, transparent)",
-                        }}
-                      >
-                        🔑
-                      </div>
-                      <h3 style={{ fontWeight: 700, fontSize: "1.1rem", color: "var(--text-primary)", marginBottom: "0.35rem" }}>
+                    <div className="text-center mb-6">
+                      <IconBox emoji="🔑" />
+                      <h3 className="font-bold text-lg text-white mb-1.5">
                         Forgot Password?
                       </h3>
-                      <p style={{ fontSize: "0.84rem", color: "var(--text-secondary)" }}>
+                      <p className="text-sm text-slate-400">
                         Enter your email and we&apos;ll send a reset code.
                       </p>
                     </div>
@@ -853,34 +830,24 @@ export default function AuthCard({ defaultTab = "signin", onAuthenticated }: Aut
                     </FormGroup>
 
                     <SubmitButton disabled={submitting}>
-                      {submitting && <Loader2 size={15} className="animate-spin" />}
+                      {submitting && (
+                        <Loader2 size={15} className="animate-spin" />
+                      )}
                       {submitting ? "Sending…" : "Send Reset Code →"}
                     </SubmitButton>
                   </form>
                 ) : (
                   <form onSubmit={handleResetPassword} noValidate>
-                    <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
-                      <div
-                        style={{
-                          width: 56,
-                          height: 56,
-                          borderRadius: 14,
-                          margin: "0 auto 0.75rem",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontSize: "1.6rem",
-                          background: "color-mix(in srgb, var(--accent) 10%, transparent)",
-                          border: "1px solid color-mix(in srgb, var(--accent) 24%, transparent)",
-                        }}
-                      >
-                        📬
-                      </div>
-                      <h3 style={{ fontWeight: 700, fontSize: "1.1rem", color: "var(--text-primary)", marginBottom: "0.35rem" }}>
+                    <div className="text-center mb-6">
+                      <IconBox emoji="📬" />
+                      <h3 className="font-bold text-lg text-white mb-1.5">
                         Reset Password
                       </h3>
-                      <p style={{ fontSize: "0.84rem", color: "var(--text-secondary)" }}>
-                        Code sent to <strong>{forgotEmail}</strong>
+                      <p className="text-sm text-slate-400">
+                        Code sent to{" "}
+                        <strong className="text-white font-semibold">
+                          {forgotEmail}
+                        </strong>
                       </p>
                     </div>
 
@@ -928,23 +895,23 @@ export default function AuthCard({ defaultTab = "signin", onAuthenticated }: Aut
                     </FormGroup>
 
                     <SubmitButton disabled={submitting}>
-                      {submitting && <Loader2 size={15} className="animate-spin" />}
+                      {submitting && (
+                        <Loader2 size={15} className="animate-spin" />
+                      )}
                       {submitting ? "Resetting…" : "Reset Password →"}
                     </SubmitButton>
 
-                    <p style={{ textAlign: "center", marginTop: "0.85rem", fontSize: "0.8rem" }}>
-                      <button
-                        type="button"
-                        className="link-btn"
-                        style={{ fontSize: "0.8rem" }}
+                    <p className="text-center mt-3 text-xs text-slate-400">
+                      <LinkButton
                         onClick={() => {
                           setResetStep("request");
                           setError("");
                           setSuccess("");
                         }}
+                        className="text-xs"
                       >
                         Request a new code
-                      </button>
+                      </LinkButton>
                     </p>
                   </form>
                 )}

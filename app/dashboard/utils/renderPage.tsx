@@ -19,7 +19,7 @@ import { BillingPage } from '../pages/BillingPage';
 import { PrivacyPage } from '../pages/PrivacyPage';
 import { HelpPage } from '../pages/HelpPage';
 import { NotificationsPage } from '../pages/NotificationsPage';
-import { AdminManagementPage } from '../pages/AdminManagementPage';
+import { AdminManagementPage } from '../pages/admin/AdminManagementPage';
 
 // Create a cache to store component instances with their state
 const pageCache = new Map<string, ReactElement>();
