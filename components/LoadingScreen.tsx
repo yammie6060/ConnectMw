@@ -147,7 +147,7 @@ export function LoadingScreen({ minDisplayTime = 5000, onLoadingComplete }: Load
             letterSpacing: "0.3px",
             animation: "cmw-pulse 2s ease-in-out infinite",
           }}>
-            Loading your workspace...
+            Loading...
           </p>
         </div>
       </div>
