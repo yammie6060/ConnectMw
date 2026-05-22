@@ -105,10 +105,22 @@ export type ServiceListing = {
     verification_status?: string;
     type: string | null;
     display_name: string | null;
+    owner_name?: string | null;
+    owner_email?: string | null;
+    owner_phone?: string | null;
   } | null;
   provider_location?: string | null;
+  booked_slots?: Array<{
+    booking_date?: string | null;
+    start_time?: string | null;
+    end_time?: string | null;
+    status?: string | null;
+  }>;
   created_at?: string | null;
   updated_at?: string | null;
+  grouped_items?: ServiceListing[];
+  grouped_count?: number;
+  display_location?: string | null;
 };
 
 export type BeautyPriceOption = {
@@ -463,6 +475,14 @@ export const providerService = {
       method: "POST",
       headers: authHeaders(),
       body: JSON.stringify(payload),
+    });
+  },
+
+  updateInteractionStatus(interactionType: "rental_application" | "booking" | "order", interactionId: string, status: string) {
+    return apiRequest<ServiceInteraction>(`/services/interactions/${interactionType}/${interactionId}/status`, {
+      method: "PUT",
+      headers: authHeaders(),
+      body: JSON.stringify({ status }),
     });
   },
 

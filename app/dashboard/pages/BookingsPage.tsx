@@ -21,6 +21,7 @@ export function BookingsPage({ color }: BookingsPageProps) {
   const [bookings, setBookings] = useState<ServiceInteraction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -30,6 +31,19 @@ export function BookingsPage({ color }: BookingsPageProps) {
       .catch((err) => setError(err instanceof Error ? err.message : "Could not load bookings."))
       .finally(() => setLoading(false));
   }, []);
+
+  const cancelBooking = async (booking: ServiceInteraction) => {
+    setUpdatingId(booking.id);
+    setError("");
+    try {
+      const res = await providerService.updateInteractionStatus("booking", booking.id, "cancelled");
+      if (res.data) setBookings((current) => current.map((item) => item.id === booking.id ? res.data! : item));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not cancel booking.");
+    } finally {
+      setUpdatingId(null);
+    }
+  };
 
   return (
     <PageShell title="Bookings" subtitle="Your beauty service booking requests" color={color}>
@@ -52,6 +66,16 @@ export function BookingsPage({ color }: BookingsPageProps) {
               <Clock size={12} /> {formatWhen(booking)} · {money(booking.total_amount)}
             </div>
             {booking.notes && <p className="text-xs" style={{ color: "#cde0f0" }}>{booking.notes}</p>}
+            {!["cancelled", "completed", "rejected"].includes(booking.status) && (
+              <button
+                disabled={updatingId === booking.id}
+                onClick={() => cancelBooking(booking)}
+                className="mt-3 px-3 py-2 rounded-lg text-[11px] font-bold disabled:opacity-50"
+                style={{ background: "#ef444420", color: "#ef4444", border: "1px solid #ef444440" }}
+              >
+                {updatingId === booking.id ? "Cancelling..." : "Cancel booking"}
+              </button>
+            )}
           </div>
         ))}
         {!loading && bookings.length === 0 && (

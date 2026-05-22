@@ -26,6 +26,7 @@ export function EnquiriesPage({ color, user }: EnquiriesPageProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -37,6 +38,22 @@ export function EnquiriesPage({ color, user }: EnquiriesPageProps) {
   }, [user.activeProviderId]);
 
   const selected = items.find((item) => item.id === selectedId) || null;
+
+  const updateStatus = async (item: ServiceInteraction, status: string) => {
+    setUpdatingId(item.id);
+    setError("");
+    try {
+      const type = item.type === "order" ? "order" : "rental_application";
+      const res = await providerService.updateInteractionStatus(type, item.id, status);
+      if (res.data) {
+        setItems((current) => current.map((entry) => entry.id === item.id ? res.data! : entry));
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not update status.");
+    } finally {
+      setUpdatingId(null);
+    }
+  };
 
   return (
     <PageShell title="Enquiries" subtitle="Customer rental enquiries and spare part orders" color={color}>
@@ -107,6 +124,22 @@ export function EnquiriesPage({ color, user }: EnquiriesPageProps) {
                   <div className="rounded-lg p-3" style={{ background: "var(--bg-elevated, #1a2e42)", color: "#8ca5bc" }}>Total<br /><strong style={{ color: "var(--text-primary, white)" }}>K{(selected.total_amount ?? 0).toLocaleString()}</strong></div>
                 </div>
               )}
+              <div className="flex flex-wrap gap-2 mt-4">
+                {(selected.type === "order"
+                  ? ["confirmed", "paid", "processing", "delivered", "completed", "cancelled", "rejected"]
+                  : ["seen", "accepted", "rejected", "expired", "completed"]
+                ).map((nextStatus) => (
+                  <button
+                    key={nextStatus}
+                    disabled={updatingId === selected.id || selected.status === nextStatus}
+                    onClick={() => updateStatus(selected, nextStatus)}
+                    className="px-3 py-2 rounded-lg text-[11px] font-bold capitalize disabled:opacity-50"
+                    style={{ background: selected.status === nextStatus ? `${statusColor(nextStatus)}20` : `${color}14`, color: selected.status === nextStatus ? statusColor(nextStatus) : color, border: `1px solid ${selected.status === nextStatus ? statusColor(nextStatus) + "40" : color + "30"}` }}
+                  >
+                    {updatingId === selected.id ? "Updating..." : nextStatus}
+                  </button>
+                ))}
+              </div>
             </>
           ) : (
             <div className="flex flex-col items-center justify-center h-full py-10 text-center">

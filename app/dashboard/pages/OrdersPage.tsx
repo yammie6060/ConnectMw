@@ -23,6 +23,7 @@ export function OrdersPage({ color }: OrdersPageProps) {
   const [orders, setOrders] = useState<ServiceInteraction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -39,6 +40,19 @@ export function OrdersPage({ color }: OrdersPageProps) {
     if (tab === "completed") return completed;
     return true;
   }), [orders, tab]);
+
+  const cancelOrder = async (order: ServiceInteraction) => {
+    setUpdatingId(order.id);
+    setError("");
+    try {
+      const res = await providerService.updateInteractionStatus("order", order.id, "cancelled");
+      if (res.data) setOrders((current) => current.map((item) => item.id === order.id ? res.data! : item));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not cancel order.");
+    } finally {
+      setUpdatingId(null);
+    }
+  };
 
   return (
     <PageShell title="My Orders" subtitle="Track your spare part orders" color={color}>
@@ -95,6 +109,16 @@ export function OrdersPage({ color }: OrdersPageProps) {
                     <div style={{ color: "#8ca5bc" }}>Quantity<br /><strong style={{ color: "var(--text-primary, white)" }}>{order.quantity ?? 1}</strong></div>
                     <div style={{ color: "#8ca5bc" }}>Status<br /><strong className="capitalize" style={{ color: tone }}>{order.status}</strong></div>
                   </div>
+                  {!["cancelled", "completed", "delivered", "rejected", "failed"].includes(order.status) && (
+                    <button
+                      disabled={updatingId === order.id}
+                      onClick={() => cancelOrder(order)}
+                      className="mt-3 px-3 py-2 rounded-lg text-[11px] font-bold disabled:opacity-50"
+                      style={{ background: "#ef444420", color: "#ef4444", border: "1px solid #ef444440" }}
+                    >
+                      {updatingId === order.id ? "Cancelling..." : "Cancel order"}
+                    </button>
+                  )}
                 </div>
               )}
             </div>

@@ -23,6 +23,7 @@ export function CalendarPage({ color, role, user }: CalendarPageProps) {
   const [bookings, setBookings] = useState<ServiceInteraction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -51,6 +52,21 @@ export function CalendarPage({ color, role, user }: CalendarPageProps) {
   const selectedEvents = bookings.filter(
     (booking) => eventDate(booking) === selectedDate
   );
+
+  const updateStatus = async (booking: ServiceInteraction, status: string) => {
+    setUpdatingId(booking.id);
+    setError("");
+    try {
+      const res = await providerService.updateInteractionStatus("booking", booking.id, status);
+      if (res.data) {
+        setBookings((current) => current.map((item) => item.id === booking.id ? res.data! : item));
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not update booking.");
+    } finally {
+      setUpdatingId(null);
+    }
+  };
 
   return (
     <PageShell
@@ -118,12 +134,13 @@ export function CalendarPage({ color, role, user }: CalendarPageProps) {
           selectedEvents.map((event) => (
             <div
               key={event.id}
-              className="rounded-xl p-3 sm:p-4 flex items-center gap-2 sm:gap-3 transition-all hover:-translate-y-0.5"
+              className="rounded-xl p-3 sm:p-4 transition-all hover:-translate-y-0.5"
               style={{
                 background: "var(--bg-secondary, #132333)",
                 border: "1px solid rgba(255,255,255,0.07)",
               }}
             >
+              <div className="flex items-center gap-2 sm:gap-3">
               {/* Status accent bar */}
               <div
                 className="w-1 self-stretch rounded-full flex-shrink-0"
@@ -163,6 +180,21 @@ export function CalendarPage({ color, role, user }: CalendarPageProps) {
               >
                 {event.status}
               </span>
+              </div>
+
+              <div className="flex flex-wrap gap-2 mt-3 pl-3">
+                {["confirmed", "rejected", "in_progress", "completed", "cancelled"].map((nextStatus) => (
+                  <button
+                    key={nextStatus}
+                    disabled={updatingId === event.id || event.status === nextStatus}
+                    onClick={() => updateStatus(event, nextStatus)}
+                    className="px-2.5 py-1.5 rounded-lg text-[10px] font-bold capitalize disabled:opacity-50"
+                    style={{ background: event.status === nextStatus ? "#10b98120" : `${color}14`, color: event.status === nextStatus ? "#10b981" : color, border: `1px solid ${event.status === nextStatus ? "#10b98140" : color + "30"}` }}
+                  >
+                    {updatingId === event.id ? "Updating..." : nextStatus.replace("_", " ")}
+                  </button>
+                ))}
+              </div>
             </div>
           ))}
 
