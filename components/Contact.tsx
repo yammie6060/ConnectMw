@@ -5,7 +5,7 @@ import { MapPin, Mail, Phone, MessageCircle, Send, CheckCircle } from "lucide-re
 
 const contactInfo = [
   { icon: MapPin, text: "Lilongwe, Malawi (expanding to Blantyre & Mzuzu)", color: "#f5ab20" },
-  { icon: Mail, text: "hello@connectmw.mw", color: "#ec4899" },
+  { icon: Mail, text: "support@connectmw.mw", color: "#ec4899" },
   { icon: Phone, text: "+265 (0) 983933510", color: "#10b981" },
   { icon: MessageCircle, text: "WhatsApp Business available", color: "#25D366" },
 ];
@@ -18,6 +18,7 @@ const topics = [
   "General Support",
 ];
 
+
 export default function Contact() {
   const [submitted, setSubmitted] = useState(false);
   const [formData, setFormData] = useState({
@@ -27,6 +28,7 @@ export default function Contact() {
     topic: "",
     message: "",
   });
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,6 +44,7 @@ export default function Contact() {
     });
   };
 
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({
       ...formData,
@@ -49,6 +52,7 @@ export default function Contact() {
     });
   };
 
+  
   return (
     <section
       id="contact"

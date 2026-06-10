@@ -47,6 +47,8 @@ export type UserProfile = {
   city: string | null;
   district: string | null;
   street_address: string | null;
+  latitude: number | null;
+  longitude: number | null;
   nationality: string | null;
   preferred_language: string | null;
   bio: string | null;
@@ -243,6 +245,8 @@ export const authService = {
       city: string | null;
       district: string | null;
       street_address: string | null;
+      latitude: number | null;
+      longitude: number | null;
       nationality: string | null;
       preferred_language: string | null;
       bio: string | null;

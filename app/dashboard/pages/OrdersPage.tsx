@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Package, Clock, CheckCircle2, XCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { PageShell } from "../components/PageShell";
 import { providerService, ServiceInteraction } from "@/services/provider.service";
+import { RatingModal } from "../components/RatingModal";
 
 interface OrdersPageProps { color: string }
 
@@ -24,6 +25,10 @@ export function OrdersPage({ color }: OrdersPageProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [ratingTarget, setRatingTarget] = useState<ServiceInteraction | null>(null);
+  const [ratingError, setRatingError] = useState("");
+  const [ratingSubmitted, setRatingSubmitted] = useState<Record<string, boolean>>({});
+  const [submittingRating, setSubmittingRating] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -51,6 +56,27 @@ export function OrdersPage({ color }: OrdersPageProps) {
       setError(err instanceof Error ? err.message : "Could not cancel order.");
     } finally {
       setUpdatingId(null);
+    }
+  };
+
+  const submitRating = async (rating: number, comment: string) => {
+    if (!ratingTarget) return;
+    setSubmittingRating(true);
+    setRatingError("");
+    try {
+      await providerService.createReview({
+        interaction_type: "order",
+        interaction_id: ratingTarget.id,
+        target_type: "provider",
+        rating,
+        comment,
+      });
+      setRatingSubmitted((current) => ({ ...current, [ratingTarget.id]: true }));
+      setRatingTarget(null);
+    } catch (err) {
+      setRatingError(err instanceof Error ? err.message : "Could not submit rating.");
+    } finally {
+      setSubmittingRating(false);
     }
   };
 
@@ -119,6 +145,15 @@ export function OrdersPage({ color }: OrdersPageProps) {
                       {updatingId === order.id ? "Cancelling..." : "Cancel order"}
                     </button>
                   )}
+                  {["completed", "delivered"].includes(order.status) && !ratingSubmitted[order.id] && (
+                    <button
+                      onClick={() => setRatingTarget(order)}
+                      className="mt-3 ml-2 px-3 py-2 rounded-lg text-[11px] font-bold"
+                      style={{ background: `${color}18`, color, border: `1px solid ${color}35` }}
+                    >
+                      Rate provider
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -131,6 +166,15 @@ export function OrdersPage({ color }: OrdersPageProps) {
           </div>
         )}
       </div>
+      <RatingModal
+        color={color}
+        interaction={ratingTarget}
+        targetLabel={ratingTarget?.provider?.business_name || ratingTarget?.provider?.display_name || "provider"}
+        submitting={submittingRating}
+        error={ratingError}
+        onClose={() => setRatingTarget(null)}
+        onSubmit={submitRating}
+      />
     </PageShell>
   );
 }

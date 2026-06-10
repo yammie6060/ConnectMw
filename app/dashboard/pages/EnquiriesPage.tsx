@@ -3,6 +3,7 @@ import { MessageSquare, Package, Home } from "lucide-react";
 import { PageShell } from "../components/PageShell";
 import { SessionUser } from "../types/dashboard";
 import { providerService, ServiceInteraction } from "@/services/provider.service";
+import { RatingModal } from "../components/RatingModal";
 
 interface EnquiriesPageProps {
   color: string;
@@ -27,6 +28,10 @@ export function EnquiriesPage({ color, user }: EnquiriesPageProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [ratingTarget, setRatingTarget] = useState<ServiceInteraction | null>(null);
+  const [ratingError, setRatingError] = useState("");
+  const [ratingSubmitted, setRatingSubmitted] = useState<Record<string, boolean>>({});
+  const [submittingRating, setSubmittingRating] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -52,6 +57,27 @@ export function EnquiriesPage({ color, user }: EnquiriesPageProps) {
       setError(err instanceof Error ? err.message : "Could not update status.");
     } finally {
       setUpdatingId(null);
+    }
+  };
+
+  const submitBuyerRating = async (rating: number, comment: string) => {
+    if (!ratingTarget) return;
+    setSubmittingRating(true);
+    setRatingError("");
+    try {
+      await providerService.createReview({
+        interaction_type: ratingTarget.type,
+        interaction_id: ratingTarget.id,
+        target_type: "buyer",
+        rating,
+        comment,
+      });
+      setRatingSubmitted((current) => ({ ...current, [ratingTarget.id]: true }));
+      setRatingTarget(null);
+    } catch (err) {
+      setRatingError(err instanceof Error ? err.message : "Could not submit rating.");
+    } finally {
+      setSubmittingRating(false);
     }
   };
 
@@ -139,6 +165,15 @@ export function EnquiriesPage({ color, user }: EnquiriesPageProps) {
                     {updatingId === selected.id ? "Updating..." : nextStatus}
                   </button>
                 ))}
+                {selected.status === "completed" && !ratingSubmitted[selected.id] && (
+                  <button
+                    onClick={() => setRatingTarget(selected)}
+                    className="px-3 py-2 rounded-lg text-[11px] font-bold"
+                    style={{ background: `${color}14`, color, border: `1px solid ${color}30` }}
+                  >
+                    Rate buyer
+                  </button>
+                )}
               </div>
             </>
           ) : (
@@ -149,6 +184,15 @@ export function EnquiriesPage({ color, user }: EnquiriesPageProps) {
           )}
         </div>
       </div>
+      <RatingModal
+        color={color}
+        interaction={ratingTarget}
+        targetLabel={ratingTarget?.customer?.full_name || ratingTarget?.customer?.email || "buyer"}
+        submitting={submittingRating}
+        error={ratingError}
+        onClose={() => setRatingTarget(null)}
+        onSubmit={submitBuyerRating}
+      />
     </PageShell>
   );
 }

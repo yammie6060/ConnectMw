@@ -127,7 +127,7 @@ export default function Services() {
       </div>
 
       {/* Services section */}
-      <section id="services" className="px-[6%] pt-14 pb-[80px]" style={{ background: "#132333" }}>
+      <section id="services" className="px-[10%] pt-14 pb-[80px] " style={{ background: "#132333" }}>
         <div className="flex justify-between items-end flex-wrap gap-6 mb-10">
           <div>
             <p className="text-[0.75rem] font-semibold tracking-[2px] uppercase text-[#f5ab20] mb-2">

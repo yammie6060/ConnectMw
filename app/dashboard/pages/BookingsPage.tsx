@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { CalendarCheck, Clock } from "lucide-react";
 import { PageShell } from "../components/PageShell";
 import { providerService, ServiceInteraction } from "@/services/provider.service";
+import { RatingModal } from "../components/RatingModal";
 
 interface BookingsPageProps {
   color: string;
@@ -22,6 +23,10 @@ export function BookingsPage({ color }: BookingsPageProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [ratingTarget, setRatingTarget] = useState<ServiceInteraction | null>(null);
+  const [ratingError, setRatingError] = useState("");
+  const [ratingSubmitted, setRatingSubmitted] = useState<Record<string, boolean>>({});
+  const [submittingRating, setSubmittingRating] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -45,6 +50,27 @@ export function BookingsPage({ color }: BookingsPageProps) {
     }
   };
 
+  const submitRating = async (rating: number, comment: string) => {
+    if (!ratingTarget) return;
+    setSubmittingRating(true);
+    setRatingError("");
+    try {
+      await providerService.createReview({
+        interaction_type: "booking",
+        interaction_id: ratingTarget.id,
+        target_type: "provider",
+        rating,
+        comment,
+      });
+      setRatingSubmitted((current) => ({ ...current, [ratingTarget.id]: true }));
+      setRatingTarget(null);
+    } catch (err) {
+      setRatingError(err instanceof Error ? err.message : "Could not submit rating.");
+    } finally {
+      setSubmittingRating(false);
+    }
+  };
+
   return (
     <PageShell title="Bookings" subtitle="Your beauty service booking requests" color={color}>
       {error && <div className="mb-3 text-xs font-semibold" style={{ color: "#ef4444" }}>{error}</div>}
@@ -63,19 +89,30 @@ export function BookingsPage({ color }: BookingsPageProps) {
               </span>
             </div>
             <div className="flex items-center gap-2 text-[11px] mb-3" style={{ color: "#8ca5bc" }}>
-              <Clock size={12} /> {formatWhen(booking)} · {money(booking.total_amount)}
+              <Clock size={12} /> {formatWhen(booking)} - {money(booking.total_amount)}
             </div>
             {booking.notes && <p className="text-xs" style={{ color: "#cde0f0" }}>{booking.notes}</p>}
-            {!["cancelled", "completed", "rejected"].includes(booking.status) && (
-              <button
-                disabled={updatingId === booking.id}
-                onClick={() => cancelBooking(booking)}
-                className="mt-3 px-3 py-2 rounded-lg text-[11px] font-bold disabled:opacity-50"
-                style={{ background: "#ef444420", color: "#ef4444", border: "1px solid #ef444440" }}
-              >
-                {updatingId === booking.id ? "Cancelling..." : "Cancel booking"}
-              </button>
-            )}
+            <div className="mt-3 flex flex-wrap gap-2">
+              {!["cancelled", "completed", "rejected"].includes(booking.status) && (
+                <button
+                  disabled={updatingId === booking.id}
+                  onClick={() => cancelBooking(booking)}
+                  className="px-3 py-2 rounded-lg text-[11px] font-bold disabled:opacity-50"
+                  style={{ background: "#ef444420", color: "#ef4444", border: "1px solid #ef444440" }}
+                >
+                  {updatingId === booking.id ? "Cancelling..." : "Cancel booking"}
+                </button>
+              )}
+              {booking.status === "completed" && !ratingSubmitted[booking.id] && (
+                <button
+                  onClick={() => setRatingTarget(booking)}
+                  className="px-3 py-2 rounded-lg text-[11px] font-bold"
+                  style={{ background: `${color}18`, color, border: `1px solid ${color}35` }}
+                >
+                  Rate provider
+                </button>
+              )}
+            </div>
           </div>
         ))}
         {!loading && bookings.length === 0 && (
@@ -85,6 +122,15 @@ export function BookingsPage({ color }: BookingsPageProps) {
           </div>
         )}
       </div>
+      <RatingModal
+        color={color}
+        interaction={ratingTarget}
+        targetLabel={ratingTarget?.provider?.business_name || ratingTarget?.provider?.display_name || "provider"}
+        submitting={submittingRating}
+        error={ratingError}
+        onClose={() => setRatingTarget(null)}
+        onSubmit={submitRating}
+      />
     </PageShell>
   );
 }

@@ -77,7 +77,7 @@ export default function Hero({ onOpenModal }: HeroProps) {
             top: "-200px", left: "-200px",
             width: "600px", height: "600px",
             borderRadius: "50%",
-            background: "radial-gradient(circle,rgba(27,79,106,.45) 0%,transparent 70%)",
+            background: "radial-gradient(circle,rgba(27,79,106,.45) 0%,transparent 30%)",
           }}
         />
 

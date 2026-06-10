@@ -2,7 +2,7 @@ import {
   LayoutGrid, Home, Calendar, Package, MessageSquare, Star,
   Settings, Inbox, BarChart2, Clock, Sparkles, PlusCircle,
   ShoppingBag, Heart, Wrench, Camera,
-  Users, ShieldCheck, CreditCard, UserPlus, Headphones,
+  Users, ShieldCheck, CreditCard, UserPlus, Headphones, Wallet,
 } from 'lucide-react';
 import { NavItem } from '../types/dashboard';
 
@@ -53,6 +53,7 @@ export const ROLE_NAV: Record<string, NavItem[]> = {
     { id: "upload",     label: "Add Property", icon: PlusCircle },
     { id: "enquiries",  label: "Enquiries",  icon: Inbox, badge: 7 },
     { id: "calendar",   label: "Calendar",   icon: Calendar },
+    { id: "wallet",     label: "Wallet",     icon: Wallet },
     { id: "analytics",  label: "Analytics",  icon: BarChart2 },
     { id: "messages",   label: "Messages",   icon: MessageSquare, badge: 2 },
     { id: "settings",   label: "Settings",   icon: Settings },
@@ -63,6 +64,7 @@ export const ROLE_NAV: Record<string, NavItem[]> = {
     { id: "upload",     label: "Add Property", icon: PlusCircle },
     { id: "enquiries",  label: "Enquiries",  icon: Inbox, badge: 7 },
     { id: "calendar",   label: "Calendar",   icon: Calendar },
+    { id: "wallet",     label: "Wallet",     icon: Wallet },
     { id: "analytics",  label: "Analytics",  icon: BarChart2 },
     { id: "messages",   label: "Messages",   icon: MessageSquare, badge: 2 },
     { id: "settings",   label: "Settings",   icon: Settings },
@@ -72,6 +74,7 @@ export const ROLE_NAV: Record<string, NavItem[]> = {
     { id: "portfolio",  label: "Portfolio",  icon: Sparkles },      
     { id: "add-service",label: "Add Service",icon: PlusCircle },   
     { id: "schedule",   label: "Schedule",   icon: Clock, badge: 3 },
+    { id: "wallet",     label: "Wallet",     icon: Wallet },
     { id: "analytics",  label: "Analytics",  icon: BarChart2 },
     { id: "messages",   label: "Messages",   icon: MessageSquare, badge: 5 },
     { id: "reviews",    label: "Reviews",    icon: Star },
@@ -82,6 +85,7 @@ export const ROLE_NAV: Record<string, NavItem[]> = {
     { id: "inventory",  label: "Inventory",  icon: Package },
     { id: "add",        label: "Add Part",   icon: PlusCircle },
     { id: "enquiries",  label: "Enquiries",  icon: Inbox, badge: 5 },
+    { id: "wallet",     label: "Wallet",     icon: Wallet },
     { id: "analytics",  label: "Analytics",  icon: BarChart2 },
     { id: "messages",   label: "Messages",   icon: MessageSquare },
     { id: "settings",   label: "Settings",   icon: Settings },

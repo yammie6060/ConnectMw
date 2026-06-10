@@ -4,7 +4,7 @@ import { useState } from "react";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
-import Services from "@/components/Services";
+import FeaturedServices from "@/components/FeaturedServices";
 import HowItWorks from "@/components/HowItWorks";
 import About from "@/components/About";
 import Reviews from "@/components/Reviews";
@@ -27,11 +27,10 @@ function HomeContent() {
       <Navbar />
       <main>
         <Hero onOpenModal={handleOpenAuthModal} />
-        <Services />
+        <FeaturedServices onOpenAuthModal={handleOpenAuthModal} />
         <HowItWorks />
         <About />
         <Reviews />
-        <CTABanner />
         <Contact />
       </main>
       <Footer />

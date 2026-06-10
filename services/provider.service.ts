@@ -32,6 +32,11 @@ export type ProviderProfile = {
   business_name: string | null;
   business_license: string | null;
   physical_address: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  deposit_required?: boolean;
+  deposit_type?: "none" | "deposit" | "full" | string;
+  deposit_amount?: number | null;
   is_verified: boolean;
   verification_status: string;
   created_at: string | null;
@@ -101,6 +106,11 @@ export type ServiceListing = {
     id: string;
     business_name: string | null;
     physical_address?: string | null;
+    latitude?: number | null;
+    longitude?: number | null;
+    deposit_required?: boolean;
+    deposit_type?: "none" | "deposit" | "full" | string;
+    deposit_amount?: number | null;
     is_verified?: boolean;
     verification_status?: string;
     type: string | null;
@@ -186,6 +196,16 @@ export type ListingActionPayload = {
   notes?: string;
 };
 
+export type PaymentCheckout = {
+  payment_id: string;
+  amount?: number | null;
+  currency?: string;
+  payment_status?: string;
+  payment_required?: boolean;
+  checkout_url?: string | null;
+  message?: string;
+};
+
 export type ServiceInteraction = {
   id: string;
   kind: "property" | "spare" | "beauty";
@@ -213,6 +233,26 @@ export type ProviderReview = {
   created_at?: string | null;
   reviewer?: { id: string; email: string; phone: string; full_name?: string | null } | null;
   provider_id: string;
+};
+
+export type WalletTransaction = {
+  id: string;
+  type: "earning" | "withdrawal" | string;
+  source: "booking" | "order" | string;
+  description: string;
+  customer?: string | null;
+  amount: number;
+  currency: string;
+  status: string;
+  created_at?: string | null;
+};
+
+export type ProviderWallet = {
+  available_balance: number;
+  pending_balance: number;
+  currency: string;
+  transactions: WalletTransaction[];
+  total: number;
 };
 
 
@@ -290,6 +330,11 @@ export const providerService = {
       business_name?: string;
       business_license?: string;
       physical_address?: string;
+      latitude?: number | null;
+      longitude?: number | null;
+      deposit_required?: boolean;
+      deposit_type?: "none" | "deposit" | "full";
+      deposit_amount?: number | null;
     }
   ) {
     return apiRequest(`/provider/${providerId}/profile`, {
@@ -352,10 +397,15 @@ export const providerService = {
     }>("/services/options", { method: "GET", headers: authHeaders() });
   },
 
-  browseServices(kind?: "property" | "spare" | "beauty", search?: string) {
+  browseServices(kind?: "property" | "spare" | "beauty", search?: string, options: { location?: string; latitude?: number; longitude?: number; skip?: number; limit?: number } = {}) {
     const params = new URLSearchParams();
     if (kind) params.set("kind", kind);
     if (search) params.set("search", search);
+    if (options.location) params.set("location", options.location);
+    if (options.latitude != null) params.set("latitude", String(options.latitude));
+    if (options.longitude != null) params.set("longitude", String(options.longitude));
+    if (options.skip != null) params.set("skip", String(options.skip));
+    if (options.limit != null) params.set("limit", String(options.limit));
     const query = params.toString();
     return apiRequest<{ items: ServiceListing[]; total: number }>(`/services${query ? `?${query}` : ""}`, {
       method: "GET",
@@ -383,6 +433,28 @@ export const providerService = {
     });
   },
 
+  createReview(payload: {
+    interaction_type: "rental_application" | "booking" | "order";
+    interaction_id: string;
+    target_type?: "provider" | "buyer";
+    rating: number;
+    comment?: string;
+  }) {
+    return apiRequest<ProviderReview>("/services/reviews", {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify(payload),
+    });
+  },
+
+  getWallet(providerId?: string) {
+    const query = providerId ? `?provider_id=${providerId}` : "";
+    return apiRequest<ProviderWallet>(`/services/wallet${query}`, {
+      method: "GET",
+      headers: authHeaders(),
+    });
+  },
+
   listProviderServices(providerId: string, kind?: "property" | "spare" | "beauty") {
     const query = kind ? `?kind=${kind}` : "";
     return apiRequest<{ items: ServiceListing[]; total: number }>(`/services/provider/${providerId}${query}`, {
@@ -391,9 +463,13 @@ export const providerService = {
     });
   },
 
-  getProviderShop(providerId: string, kind?: "property" | "spare" | "beauty") {
-    const query = kind ? `?kind=${kind}` : "";
-    return apiRequest<{ provider: ServiceListing["provider"]; items: ServiceListing[]; groups: Array<{ name: string; count: number; items: ServiceListing[] }>; total: number }>(`/services/shop/${providerId}${query}`, {
+  getProviderShop(providerId: string, kind?: "property" | "spare" | "beauty", options: { skip?: number; limit?: number } = {}) {
+    const params = new URLSearchParams();
+    if (kind) params.set("kind", kind);
+    if (options.skip != null) params.set("skip", String(options.skip));
+    if (options.limit != null) params.set("limit", String(options.limit));
+    const query = params.toString();
+    return apiRequest<{ provider: ServiceListing["provider"]; items: ServiceListing[]; groups: Array<{ name: string; count: number; items: ServiceListing[] }>; total: number; skip: number; limit: number }>(`/services/shop/${providerId}${query ? `?${query}` : ""}`, {
       method: "GET",
       headers: authHeaders(),
     });
@@ -415,6 +491,8 @@ export const providerService = {
     business_name?: string;
     business_license?: string;
     physical_address?: string;
+    latitude?: number | null;
+    longitude?: number | null;
   }) {
     return apiRequest<ProviderProfile & { user_id: string; type: string | null; display_name: string | null; ownerEmail?: string | null; ownerPhone?: string | null }>("/provider/staff/providers", {
       method: "POST",
@@ -471,10 +549,17 @@ export const providerService = {
   },
 
   createListingAction(kind: "property" | "spare" | "beauty", itemId: string, payload: ListingActionPayload) {
-    return apiRequest<{ id: string; status: string; order_number?: string }>(`/services/${kind}/${itemId}/action`, {
+    return apiRequest<{ id: string; status: string; order_number?: string; payment?: PaymentCheckout | null }>(`/services/${kind}/${itemId}/action`, {
       method: "POST",
       headers: authHeaders(),
       body: JSON.stringify(payload),
+    });
+  },
+
+  verifyPaychanguPayment(txRef: string) {
+    return apiRequest<{ status: string; payment_id: string }>(`/services/payments/paychangu/verify/${txRef}`, {
+      method: "POST",
+      headers: authHeaders(),
     });
   },
 

@@ -16,6 +16,7 @@ import { MessagesPage } from '../pages/MessagesPage';
 import { SettingsPage } from '../pages/SettingsPage';
 import { ProfilePage } from '../pages/ProfilePage';
 import { BillingPage } from '../pages/BillingPage';
+import { WalletPage } from '../pages/WalletPage';
 import { PrivacyPage } from '../pages/PrivacyPage';
 import { HelpPage } from '../pages/HelpPage';
 import { NotificationsPage } from '../pages/NotificationsPage';
@@ -43,7 +44,7 @@ export function renderPage(
   const role = user.role;
 
   // Create a unique key for this page instance
-  const cacheKey = `${activeItem}-${user.id}-${user.role}-${user.fullName}-${isDarkMode}`;
+  const cacheKey = `${activeItem}-${user.id}-${user.role}-${user.activeProviderId ?? "none"}-${user.fullName}-${isDarkMode}`;
 
   // Check if we already have this component instance cached
   if (pageCache.has(cacheKey)) {
@@ -171,6 +172,11 @@ export function renderPage(
       break;
     case "billing":     
       component = <BillingPage color={color} user={user} />;
+      break;
+    case "wallet":
+      component = ["landlord", "agent", "beautyProvider", "spareSeller", "admin", "support"].includes(role)
+        ? <WalletPage color={color} user={user} />
+        : <OverviewPage user={user} meta={meta} navItems={navItems} setActiveItem={setActiveItem} />;
       break;
     case "privacy":     
       component = <PrivacyPage color={color} />;

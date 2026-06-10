@@ -67,7 +67,7 @@ function resetDashboardLanding() {
     .forEach((key) => localStorage.removeItem(key));
 }
 
-// ── Sub-components ────────────────────────────────────────────────────────────
+// Sub-components 
 
 function PasswordInput({
   placeholder,
@@ -222,7 +222,7 @@ function LinkButton({
   );
 }
 
-// ── Main Component ────────────────────────────────────────────────────────────
+// Main Component 
 
 export default function AuthCard({
   defaultTab = "signin",

@@ -3,6 +3,7 @@ import { CalendarDays } from "lucide-react";
 import { PageShell } from "../components/PageShell";
 import { SessionUser } from "../types/dashboard";
 import { providerService, ServiceInteraction } from "@/services/provider.service";
+import { RatingModal } from "../components/RatingModal";
 
 interface CalendarPageProps {
   color: string;
@@ -24,6 +25,10 @@ export function CalendarPage({ color, role, user }: CalendarPageProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [ratingTarget, setRatingTarget] = useState<ServiceInteraction | null>(null);
+  const [ratingError, setRatingError] = useState("");
+  const [ratingSubmitted, setRatingSubmitted] = useState<Record<string, boolean>>({});
+  const [submittingRating, setSubmittingRating] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -65,6 +70,27 @@ export function CalendarPage({ color, role, user }: CalendarPageProps) {
       setError(err instanceof Error ? err.message : "Could not update booking.");
     } finally {
       setUpdatingId(null);
+    }
+  };
+
+  const submitBuyerRating = async (rating: number, comment: string) => {
+    if (!ratingTarget) return;
+    setSubmittingRating(true);
+    setRatingError("");
+    try {
+      await providerService.createReview({
+        interaction_type: "booking",
+        interaction_id: ratingTarget.id,
+        target_type: "buyer",
+        rating,
+        comment,
+      });
+      setRatingSubmitted((current) => ({ ...current, [ratingTarget.id]: true }));
+      setRatingTarget(null);
+    } catch (err) {
+      setRatingError(err instanceof Error ? err.message : "Could not submit rating.");
+    } finally {
+      setSubmittingRating(false);
     }
   };
 
@@ -194,6 +220,15 @@ export function CalendarPage({ color, role, user }: CalendarPageProps) {
                     {updatingId === event.id ? "Updating..." : nextStatus.replace("_", " ")}
                   </button>
                 ))}
+                {event.status === "completed" && !ratingSubmitted[event.id] && (
+                  <button
+                    onClick={() => setRatingTarget(event)}
+                    className="px-2.5 py-1.5 rounded-lg text-[10px] font-bold"
+                    style={{ background: `${color}14`, color, border: `1px solid ${color}30` }}
+                  >
+                    Rate buyer
+                  </button>
+                )}
               </div>
             </div>
           ))}
@@ -213,6 +248,15 @@ export function CalendarPage({ color, role, user }: CalendarPageProps) {
           </div>
         )}
       </div>
+      <RatingModal
+        color={color}
+        interaction={ratingTarget}
+        targetLabel={ratingTarget?.customer?.full_name || ratingTarget?.customer?.email || "buyer"}
+        submitting={submittingRating}
+        error={ratingError}
+        onClose={() => setRatingTarget(null)}
+        onSubmit={submitBuyerRating}
+      />
     </PageShell>
   );
 }

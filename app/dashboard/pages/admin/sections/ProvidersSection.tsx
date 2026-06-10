@@ -152,7 +152,7 @@ export function ProvidersSection({
           </p>
           
           <div className="text-xs italic" style={{ color: "#8ca5bc" }}>
-             Tip: Go to the Users tab to add provider workspaces to specific users
+            Tip: Go to the Users tab to add provider workspaces to specific users
           </div>
         </div>
       )}
