@@ -99,11 +99,6 @@ export default function Services() {
       {/* Payment strip */}
       <div
         className="flex items-center justify-center gap-12 flex-wrap px-[6%] py-5"
-        style={{
-          background: "#1a2e42",
-          borderTop: "1px solid rgba(255,255,255,0.06)",
-          borderBottom: "1px solid rgba(255,255,255,0.06)",
-        }}
       >
         <span className="text-[0.75rem] text-[#8ca5bc] uppercase tracking-[1px] font-semibold">
           Secure payments via
@@ -114,11 +109,7 @@ export default function Services() {
               key={pm.label}
               onClick={(e) => handlePaymentClick(pm.href, e)}
               className="text-[0.78rem] font-semibold px-3 py-1.5 rounded-lg inline-flex items-center transition-all duration-300 hover:scale-105 hover:shadow-lg cursor-pointer"
-              style={{ 
-                background: pm.bgColor, 
-                color: pm.textColor, 
-                border: "1px solid rgba(255,255,255,0.1)" 
-              }}
+
             >
               {pm.icon && <pm.icon className="w-4 h-4 mr-2" />} {pm.label}
             </button>
@@ -127,7 +118,7 @@ export default function Services() {
       </div>
 
       {/* Services section */}
-      <section id="services" className="px-[10%] pt-14 pb-[80px] " style={{ background: "#132333" }}>
+      <section id="services" className="px-[10%] pt-14 pb-[80px] ">
         <div className="flex justify-between items-end flex-wrap gap-6 mb-10">
           <div>
             <p className="text-[0.75rem] font-semibold tracking-[2px] uppercase text-[#f5ab20] mb-2">
@@ -229,7 +220,6 @@ function ServiceCard({
   return (
     <div
       className="group relative rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_20px_48px_rgba(0,0,0,0.4)] cursor-pointer"
-      style={{ background: "#1a2e42", border: "1px solid rgba(255,255,255,0.07)" }}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onClick={handleCardClick}
@@ -238,7 +228,6 @@ function ServiceCard({
       <div className="relative h-48 overflow-hidden">
         <div
           className="flex h-full transition-transform duration-700 ease-out"
-          style={{ transform: `translateX(-${current * 100}%)` }}
         >
           {images.map((src, i) => (
             <div key={i} className="flex-shrink-0 w-full h-full">
@@ -255,7 +244,6 @@ function ServiceCard({
         {/* Gradient overlay */}
         <div
           className="absolute inset-0 pointer-events-none"
-          style={{ background: "linear-gradient(to bottom, transparent 50%, #1a2e42 100%)" }}
         />
 
         {/* Navigation arrows */}
@@ -300,7 +288,7 @@ function ServiceCard({
       {/* Content */}
       <div className="p-6">
         <div className="flex items-center gap-2 mb-3">
-          {Icon && <Icon className="w-5 h-5" style={{ color }} />}
+          {Icon && <Icon className="w-5 h-5"   />}
           <h3 className="text-xl font-bold text-white">{title}</h3>
         </div>
         
@@ -320,7 +308,6 @@ function ServiceCard({
         <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/10">
           <span
             className="inline-flex items-center px-3 py-1 rounded-full text-[0.7rem] font-semibold"
-            style={{ background: `${color}20`, border: `1px solid ${color}40`, color }}
           >
             {tag}
           </span>
@@ -330,7 +317,6 @@ function ServiceCard({
               onServiceClick(href, e);
             }}
             className="text-xs font-medium transition-all duration-300 hover:translate-x-1 inline-flex items-center gap-1 group/btn"
-            style={{ color }}
           >
             {cta}
             <ExternalLink className="w-3 h-3 opacity-0 group-hover/btn:opacity-100 transition-opacity" />

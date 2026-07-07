@@ -58,7 +58,7 @@ export function NotificationDropdown({ isOpen, onClose, onNavigateToAll, color }
     <div ref={ref} style={{ position: "fixed", top: "68px", right: "16px", width: "320px", zIndex: 9999, background: "var(--bg-secondary, #132333)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "16px", boxShadow: "0 20px 60px rgba(0,0,0,0.5)", overflow: "hidden", animation: "slideDown 0.18s ease" }}>
       <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
         <div className="flex items-center gap-2">
-          <Bell size={14} style={{ color }} />
+          <Bell size={14} color={color} />
           <span className="text-sm font-bold" style={{ color: "var(--text-primary, white)" }}>Notifications</span>
           <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: `${color}20`, color }}>{unreadCount}</span>
         </div>

@@ -60,7 +60,7 @@ export function RatingModal({
               className="w-10 h-10 rounded-xl flex items-center justify-center transition-all hover:bg-white/5"
               aria-label={`${star} star rating`}
             >
-              <Star size={24} fill={star <= rating ? color : "transparent"} style={{ color }} />
+              <Star size={24} fill={star <= rating ? color : "transparent"} color={color} />
             </button>
           ))}
         </div>

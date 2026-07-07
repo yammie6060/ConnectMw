@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { MobileTabSelector } from "./components/MobileTabSelector";
 import { FeedbackBanner } from "./components/FeedbackBanner";
 import { OverviewSection } from "./sections/OverviewSection";
-import { UsersSection } from "./sections/UsersSection";
 import { StaffSection } from "./sections/StaffSection";
 import { ProvidersSection } from "./sections/ProvidersSection";
 import { SupportSection } from "./sections/SupportSection";
@@ -16,6 +15,7 @@ import { useAdminData } from "@/hooks/useAdminData";
 import { useProviderForms } from "@/hooks/useProviderForms";
 import { ManagedUser } from "@/services/admin.service";
 import { PageShell } from "../../components/PageShell";
+import { UsersSection } from "./sections/UsersSection";
 
 export function AdminManagementPage({
   color,
@@ -93,99 +93,101 @@ export function AdminManagementPage({
       subtitle="User support, provider verification, staff, payments, and platform trust"
       color={color}
     >
-      <MobileTabSelector currentTab={tab} onTabChange={handleTabChange} />
+      {/* Main container with centering and max-width */}
+      <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
+        <MobileTabSelector currentTab={tab} onTabChange={handleTabChange} />
 
-      <div className="hidden sm:flex gap-1.5 overflow-x-auto scrollbar-none pb-1 mb-5">
-        {TABS.map(([id, label]) => {
-          if (id === "staff" && !canManageRoles) return null;
-          return (
-            <button
-              key={id}
-              onClick={() => handleTabChange(id)}
-              className="flex-shrink-0 px-3 py-2 rounded-lg text-xs font-bold transition-all"
-              style={
-                tab === id
-                  ? { background: color, color: "#0d1f2d" }
-                  : { background: "rgba(255,255,255,0.05)", color: "#8ca5bc" }
-              }
-            >
-              {label}
-            </button>
-          );
-        })}
-      </div>
-
-      <FeedbackBanner message={displayMessage} isError={displayIsError} color={color} />
-
-      {loading ? (
-        <div
-          className="rounded-xl p-5 text-sm"
-          style={{ background: "var(--bg-secondary, #132333)", color: "#8ca5bc" }}
-        >
-          Loading management data…
+        <div className="hidden sm:flex gap-1.5 overflow-x-auto scrollbar-none pb-1 mb-5">
+          {TABS.map(([id, label]) => {
+            if (id === "staff" && !canManageRoles) return null;
+            return (
+              <button
+                key={id}
+                onClick={() => handleTabChange(id)}
+                className="flex-shrink-0 px-3 py-2 rounded-lg text-xs font-bold transition-all"
+                style={
+                  tab === id
+                    ? { background: color, color: "#0d1f2d" }
+                    : { background: "rgba(255,255,255,0.05)", color: "#8ca5bc" }
+                }
+              >
+                {label}
+              </button>
+            );
+          })}
         </div>
-      ) : (
-        <>
-          {tab === "overview" && (
-            <OverviewSection overview={overview} tickets={tickets} payments={payments} reviews={reviews} color={color} />
-          )}
-          
-          {tab === "users" && (
-            <UsersSection
-              customerUsers={customerUsers}
-              providerTypes={providerTypes}
-              providerForms={providerForms}
-              actionLoading={{ ...actionLoading, ...providerLoading }}
-              color={color}
-              canManageRoles={canManageRoles}
-              onUpdateProviderForm={updateProviderForm}
-              onCreateProviderWorkspace={handleCreateProviderWorkspace}
-              onSetUserStatus={setUserStatus}
-              onSelectUser={setSelectedUser}
-            />
-          )}
-          
-          {tab === "staff" && canManageRoles && (
-            <StaffSection
-              staff={staff}
-              staffForm={staffForm}
-              actionLoading={actionLoading}
-              color={color}
-              onStaffFormChange={setStaffForm}
-              onCreateStaff={handleStaffSubmit}
-              onSetUserStatus={setUserStatus}
-              onSelectUser={setSelectedUser}
-            />
-          )}
-          
-          {tab === "providers" && (
-            <ProvidersSection
-              pendingProviders={pendingProviders}
-              providerTypes={providerTypes}
-              providerForms={providerForms}
-              ownerProviderForm={ownerProviderForm}
-              actionLoading={{ ...actionLoading, ...providerLoading }}
-              color={color}
-              canManageRoles={canManageRoles}
-              onUpdateProviderForm={updateProviderForm}
-              onCreateProviderWorkspace={handleCreateProviderWorkspace}
-              onOwnerProviderFormChange={updateOwnerProviderForm}
-              onOwnerProviderSubmit={handleOwnerProviderSubmit}
-              onSetProviderStatus={setProviderStatus}
-            />
-          )}
-          
-          {tab === "support" && (
-            <SupportSection tickets={tickets} actionLoading={actionLoading} color={color} onUpdateTicket={updateTicket} />
-          )}
-          
-          {tab === "payments" && <PaymentsSection payments={payments} color={color} />}
-          
-          {tab === "reviews" && <ReviewsSection reviews={reviews} color={color} />}
-        </>
-      )}
 
-      {selectedUser && <UserDetail user={selectedUser} color={color} onClose={() => setSelectedUser(null)} />}
+        <FeedbackBanner message={displayMessage} isError={displayIsError} color={color} />
+
+        {loading ? (
+          <div
+            className="rounded-xl p-5 text-sm animate-pulse"
+          >
+            Loading management data…
+          </div>
+        ) : (
+          <>
+            {tab === "overview" && (
+              <OverviewSection overview={overview} tickets={tickets} payments={payments} reviews={reviews} color={color} />
+            )}
+            
+            {tab === "users" && (
+              <UsersSection
+                customerUsers={customerUsers}
+                providerTypes={providerTypes}
+                providerForms={providerForms}
+                actionLoading={{ ...actionLoading, ...providerLoading }}
+                color={color}
+                canManageRoles={canManageRoles}
+                onUpdateProviderForm={updateProviderForm}
+                onCreateProviderWorkspace={handleCreateProviderWorkspace}
+                onSetUserStatus={setUserStatus}
+                onSelectUser={setSelectedUser}
+              />
+            )}
+            
+            {tab === "staff" && canManageRoles && (
+              <StaffSection
+                staff={staff}
+                staffForm={staffForm}
+                actionLoading={actionLoading}
+                color={color}
+                onStaffFormChange={setStaffForm}
+                onCreateStaff={handleStaffSubmit}
+                onSetUserStatus={setUserStatus}
+                onSelectUser={setSelectedUser}
+              />
+            )}
+            
+            {tab === "providers" && (
+              <ProvidersSection
+                pendingProviders={pendingProviders}
+                providerTypes={providerTypes}
+                providerForms={providerForms}
+                ownerProviderForm={ownerProviderForm}
+                actionLoading={{ ...actionLoading, ...providerLoading }}
+                color={color}
+                canManageRoles={canManageRoles}
+                onUpdateProviderForm={updateProviderForm}
+                onCreateProviderWorkspace={handleCreateProviderWorkspace}
+                onOwnerProviderFormChange={updateOwnerProviderForm}
+                onOwnerProviderSubmit={handleOwnerProviderSubmit}
+                onSetProviderStatus={setProviderStatus}
+              />
+            )}
+            
+            {tab === "support" && (
+              <SupportSection tickets={tickets} actionLoading={actionLoading} color={color} onUpdateTicket={updateTicket} />
+            )}
+            
+            {tab === "payments" && <PaymentsSection payments={payments} color={color} />}
+            
+            {tab === "reviews" && <ReviewsSection reviews={reviews} color={color} />}
+          </>
+        )}
+
+        {selectedUser && <UserDetail user={selectedUser} color={color} onClose={() => setSelectedUser(null)} />}
+      </div>
     </PageShell>
   );
 }

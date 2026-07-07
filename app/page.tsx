@@ -5,7 +5,6 @@ import { LoadingScreen } from "@/components/LoadingScreen";
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import FeaturedServices from "@/components/FeaturedServices";
-import HowItWorks from "@/components/HowItWorks";
 import About from "@/components/About";
 import Reviews from "@/components/Reviews";
 import CTABanner from "@/components/CTABanner";
@@ -28,7 +27,6 @@ function HomeContent() {
       <main>
         <Hero onOpenModal={handleOpenAuthModal} />
         <FeaturedServices onOpenAuthModal={handleOpenAuthModal} />
-        <HowItWorks />
         <About />
         <Reviews />
         <Contact />
@@ -38,8 +36,7 @@ function HomeContent() {
       {/* Auth Modal */}
       {showAuthModal && (
         <div
-          className="fixed inset-0 z-[1000] flex items-center justify-center p-4 pt-[100px] overflow-y-auto"
-          style={{ background: "rgba(13,31,45,0.95)" }}
+          className="fixed inset-0 z-[1000] flex items-center justify-center p-4 pt-[100px] overflow-y-auto bg-[rgba(13,31,45,0.95)]"
           onClick={() => setShowAuthModal(false)}
         >
           <div onClick={(e) => e.stopPropagation()}>

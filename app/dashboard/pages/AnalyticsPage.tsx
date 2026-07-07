@@ -61,7 +61,7 @@ export function AnalyticsPage({ color, user }: AnalyticsPageProps) {
           return (
             <div key={card.label} className="rounded-xl p-4" style={{ background: "var(--bg-secondary, #132333)", border: "1px solid rgba(255,255,255,0.07)" }}>
               <div className="flex items-center justify-between mb-2">
-                <CardIcon size={14} style={{ color }} />
+                <CardIcon size={14} color={color} />
               </div>
               <div className="text-xl font-black" style={{ color }}>{card.value}</div>
               <div className="text-[11px] mt-0.5" style={{ color: "#8ca5bc" }}>{card.label}</div>

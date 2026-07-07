@@ -3,12 +3,13 @@ import {
   Settings, Inbox, BarChart2, Clock, Sparkles, PlusCircle,
   ShoppingBag, Heart, Wrench, Camera,
   Users, ShieldCheck, CreditCard, UserPlus, Headphones, Wallet,
+  Percent,
 } from 'lucide-react';
 import { NavItem } from '../types/dashboard';
 
 export const ROLE_NAV: Record<string, NavItem[]> = {
   admin: [
-    { id: "admin", label: "Management", icon: LayoutGrid },
+    { id: "admin", label: "Dashboard", icon: LayoutGrid },
     { id: "browse", label: "Browse", icon: ShoppingBag },
     { id: "listings", label: "Property Listings", icon: Home },
     { id: "upload", label: "Add Property", icon: PlusCircle },
@@ -21,6 +22,7 @@ export const ROLE_NAV: Record<string, NavItem[]> = {
     { id: "admin-support", label: "Support", icon: Headphones },
     { id: "admin-payments", label: "Payments", icon: CreditCard },
     { id: "admin-reviews", label: "Reviews", icon: Star },
+    
     { id: "settings", label: "Settings", icon: Settings },
   ],
   support: [
@@ -55,7 +57,8 @@ export const ROLE_NAV: Record<string, NavItem[]> = {
     { id: "calendar",   label: "Calendar",   icon: Calendar },
     { id: "wallet",     label: "Wallet",     icon: Wallet },
     { id: "analytics",  label: "Analytics",  icon: BarChart2 },
-    { id: "messages",   label: "Messages",   icon: MessageSquare, badge: 2 },
+    { id: "messages",   label: "Messages",   icon: MessageSquare, badge: 2 },   
+    
     { id: "settings",   label: "Settings",   icon: Settings },
   ],
   agent: [
@@ -66,18 +69,19 @@ export const ROLE_NAV: Record<string, NavItem[]> = {
     { id: "calendar",   label: "Calendar",   icon: Calendar },
     { id: "wallet",     label: "Wallet",     icon: Wallet },
     { id: "analytics",  label: "Analytics",  icon: BarChart2 },
-    { id: "messages",   label: "Messages",   icon: MessageSquare, badge: 2 },
+    { id: "messages",   label: "Messages",   icon: MessageSquare, badge: 2 },    
+    
     { id: "settings",   label: "Settings",   icon: Settings },
   ],
   beautyProvider: [
-    { id: "overview",   label: "Overview",   icon: LayoutGrid },
-    { id: "portfolio",  label: "Portfolio",  icon: Sparkles },      
+    { id: "overview",   label: "Overview",   icon: LayoutGrid },    
     { id: "add-service",label: "Add Service",icon: PlusCircle },   
     { id: "schedule",   label: "Schedule",   icon: Clock, badge: 3 },
     { id: "wallet",     label: "Wallet",     icon: Wallet },
     { id: "analytics",  label: "Analytics",  icon: BarChart2 },
     { id: "messages",   label: "Messages",   icon: MessageSquare, badge: 5 },
     { id: "reviews",    label: "Reviews",    icon: Star },
+    
     { id: "settings",   label: "Settings",   icon: Settings },
   ],
   spareSeller: [
@@ -88,6 +92,7 @@ export const ROLE_NAV: Record<string, NavItem[]> = {
     { id: "wallet",     label: "Wallet",     icon: Wallet },
     { id: "analytics",  label: "Analytics",  icon: BarChart2 },
     { id: "messages",   label: "Messages",   icon: MessageSquare },
+    
     { id: "settings",   label: "Settings",   icon: Settings },
   ],
 };

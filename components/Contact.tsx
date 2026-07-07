@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { MapPin, Mail, Phone, MessageCircle, Send, CheckCircle } from "lucide-react";
+import React, { useState } from "react";
+import { MapPin, Mail, Phone, MessageCircle, Send, CheckCircle, Loader2 } from "lucide-react";
 
 const contactInfo = [
-  { icon: MapPin, text: "Lilongwe, Malawi (expanding to Blantyre & Mzuzu)", color: "#f5ab20" },
-  { icon: Mail, text: "support@connectmw.mw", color: "#ec4899" },
-  { icon: Phone, text: "+265 (0) 983933510", color: "#10b981" },
-  { icon: MessageCircle, text: "WhatsApp Business available", color: "#25D366" },
+  { icon: MapPin, text: "Lilongwe, Malawi", color: "#f5ab20" },
+  { icon: Mail, text: "support@connectmw.mw", color: "#ec4899", href: "mailto:connectmw265@gmail.com" },
+  { icon: Phone, text: "+265 (0) 983933510", color: "#10b981", href: "tel:+265983933510" },
+  { icon: MessageCircle, text: "WhatsApp Business available", color: "#25D366", href: "https://wa.me/265983933510" },
 ];
 
 const topics = [
@@ -18,9 +18,10 @@ const topics = [
   "General Support",
 ];
 
-
 export default function Contact() {
   const [submitted, setSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -29,30 +30,59 @@ export default function Contact() {
     message: "",
   });
 
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
-    setTimeout(() => setSubmitted(false), 3000);
-    // Reset form
-    setFormData({
-      firstName: "",
-      lastName: "",
-      email: "",
-      topic: "",
-      message: "",
-    });
-  };
+    setError("");
+    setIsLoading(true);
 
+    try {
+      // Validate email
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        throw new Error("Please enter a valid email address");
+      }
+
+      // Send data to your API endpoint
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to send message");
+      }
+
+      // Success
+      setSubmitted(true);
+      setFormData({
+        firstName: "",
+        lastName: "",
+        email: "",
+        topic: "",
+        message: "",
+      });
+      
+      setTimeout(() => setSubmitted(false), 5000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
     });
+    // Clear error when user starts typing
+    if (error) setError("");
   };
 
-  
   return (
     <section
       id="contact"
@@ -74,8 +104,8 @@ export default function Contact() {
                 Get In Touch
               </p>
               <h2
-                className="text-5xl font-bold tracking-[-1px] leading-[1.15] mb-3 text-white"
-                style={{ fontFamily: " sans-serif" }}
+                className="text-[clamp(1.8rem,3.5vw,2.6rem)] font-bold tracking-[-1px] leading-[1.15] mb-3 text-white"
+                style={{ fontFamily: "sans-serif" }}
               >
                 Let&apos;s Talk Business
               </h2>
@@ -88,9 +118,8 @@ export default function Contact() {
               <div className="space-y-4">
                 {contactInfo.map((item, idx) => {
                   const Icon = item.icon;
-                  return (
+                  const content = (
                     <div
-                      key={item.text}
                       className="group flex items-center gap-4 p-4 rounded-xl transition-all duration-300 hover:translate-x-1"
                       style={{
                         background: "rgba(255,255,255,0.03)",
@@ -98,7 +127,7 @@ export default function Contact() {
                       }}
                     >
                       <div
-                        className="w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:scale-105"
+                        className="w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:scale-105 flex-shrink-0"
                         style={{
                           background: `linear-gradient(135deg, ${item.color}20, transparent)`,
                           border: `1px solid ${item.color}40`,
@@ -106,8 +135,8 @@ export default function Contact() {
                       >
                         <Icon size={20} style={{ color: item.color }} />
                       </div>
-                      <div className="flex-1">
-                        <p className="text-[#cde0f0] text-sm font-medium">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[#cde0f0] text-sm font-medium break-words">
                           {item.text}
                         </p>
                         {idx === 2 && (
@@ -123,6 +152,21 @@ export default function Contact() {
                       </div>
                     </div>
                   );
+
+                  return item.href ? (
+                    <a
+                      key={idx}
+                      href={item.href}
+                      target={item.href.startsWith('http') ? "_blank" : undefined}
+                      rel={item.href.startsWith('http') ? "noopener noreferrer" : undefined}
+                      className="block cursor-pointer no-underline"
+                      aria-label={`Contact us via ${item.text}`}
+                    >
+                      {content}
+                    </a>
+                  ) : (
+                    <div key={idx}>{content}</div>
+                  );
                 })}
               </div>
 
@@ -132,17 +176,14 @@ export default function Contact() {
                 border: "1px solid rgba(245,166,35,0.1)",
               }}>
                 <p className="text-[0.82rem] text-[#8ca5bc] mb-1">
-                  A product of MiNDTech Company
+                  A product of DigiRise Limited
                 </p>
-                <p className="text-[0.9rem] text-[#f5ab20] italic font-medium">
-                  &ldquo;Digital Mind. Reliable Technology.&rdquo;
-                </p>
-                <div className="flex gap-2 mt-3 pt-3 border-t border-white/5">
-                  <span className="text-xs px-2 py-1 rounded-full bg-white/5 text-[#8ca5bc]">
+                <div className="flex flex-wrap gap-2 mt-2">
+                  <span className="text-xs px-3 py-1 rounded-full bg-white/5 text-[#f5ab20] border border-[#f5ab20]/20">
                     Est. 2025
                   </span>
-                  <span className="text-xs px-2 py-1 rounded-full bg-white/5 text-[#8ca5bc]">
-                    🇲🇼 Malawian Owned
+                  <span className="text-xs px-3 py-1 rounded-full bg-white/5 text-[#f5ab20] border border-[#f5ab20]/20">
+                    Malawian Owned
                   </span>
                 </div>
               </div>
@@ -157,6 +198,7 @@ export default function Contact() {
               background: "#1a2e42",
               border: "1px solid rgba(255,255,255,0.07)",
             }}
+            noValidate
           >
             <div className="flex items-center gap-2 mb-6">
               <div className="w-1 h-8 rounded-full bg-[#f5ab20]" />
@@ -168,50 +210,68 @@ export default function Contact() {
               </h3>
             </div>
 
+            {error && (
+              <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                {error}
+              </div>
+            )}
+
             <div className="flex gap-4 flex-col sm:flex-row">
-              <FormGroup label="First Name">
+              <FormGroup label="First Name" htmlFor="firstName">
                 <input
                   type="text"
+                  id="firstName"
                   name="firstName"
                   value={formData.firstName}
                   onChange={handleChange}
                   placeholder="Tawonga"
                   className="form-input"
                   required
+                  disabled={isLoading}
+                  aria-required="true"
                 />
               </FormGroup>
-              <FormGroup label="Last Name">
+              <FormGroup label="Last Name" htmlFor="lastName">
                 <input
                   type="text"
+                  id="lastName"
                   name="lastName"
                   value={formData.lastName}
                   onChange={handleChange}
                   placeholder="Mbewe"
                   className="form-input"
                   required
+                  disabled={isLoading}
+                  aria-required="true"
                 />
               </FormGroup>
             </div>
 
-            <FormGroup label="Email Address">
+            <FormGroup label="Email Address" htmlFor="email">
               <input
                 type="email"
+                id="email"
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
                 placeholder="you@example.com"
                 className="form-input"
                 required
+                disabled={isLoading}
+                aria-required="true"
               />
             </FormGroup>
 
-            <FormGroup label="I'm interested in">
+            <FormGroup label="I'm interested in" htmlFor="topic">
               <select 
+                id="topic"
                 name="topic"
                 value={formData.topic}
                 onChange={handleChange}
                 className="form-input"
                 required
+                disabled={isLoading}
+                aria-required="true"
               >
                 <option value="">Select a topic...</option>
                 {topics.map((t) => (
@@ -220,8 +280,9 @@ export default function Contact() {
               </select>
             </FormGroup>
 
-            <FormGroup label="Message">
+            <FormGroup label="Message" htmlFor="message">
               <textarea
+                id="message"
                 name="message"
                 value={formData.message}
                 onChange={handleChange}
@@ -229,14 +290,22 @@ export default function Contact() {
                 rows={5}
                 className="form-input resize-y"
                 required
+                disabled={isLoading}
+                aria-required="true"
               />
             </FormGroup>
 
             <button
               type="submit"
-              className="group w-full py-3.5 rounded-full text-base font-bold text-[#0d1f2d] bg-[#f5ab20] border-none transition-all duration-300 hover:bg-[#e8941a] hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(245,166,35,0.35)] cursor-pointer mt-2 flex items-center justify-center gap-2"
+              disabled={isLoading || submitted}
+              className="group w-full py-3.5 rounded-full text-base font-bold text-[#0d1f2d] bg-[#f5ab20] border-none transition-all duration-300 hover:bg-[#e8941a] hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(245,166,35,0.35)] cursor-pointer mt-2 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0"
             >
-              {submitted ? (
+              {isLoading ? (
+                <>
+                  <Loader2 size={18} className="animate-spin" />
+                  Sending...
+                </>
+              ) : submitted ? (
                 <>
                   <CheckCircle size={18} />
                   Message Sent! ✓
@@ -272,12 +341,18 @@ export default function Contact() {
         .form-input:focus {
           border-color: #f5ab20;
           background: rgba(245, 166, 35, 0.05);
+          box-shadow: 0 0 0 3px rgba(245, 166, 35, 0.1);
         }
         .form-input::placeholder {
           color: #6b8a9f;
         }
+        .form-input:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
         select.form-input {
           cursor: pointer;
+          appearance: auto;
         }
         select.form-input option {
           background: #1a2e42;
@@ -285,6 +360,9 @@ export default function Contact() {
         }
         textarea.form-input {
           font-family: "DM Sans", sans-serif;
+        }
+        .form-input.error {
+          border-color: #ef4444;
         }
       `}</style>
     </section>
@@ -294,13 +372,18 @@ export default function Contact() {
 function FormGroup({
   label,
   children,
+  htmlFor,
 }: {
   label: string;
   children: React.ReactNode;
+  htmlFor?: string;
 }) {
   return (
     <div className="flex flex-col gap-1.5 mb-4 flex-1">
-      <label className="text-[0.8rem] font-medium text-[#8ca5bc]">
+      <label 
+        htmlFor={htmlFor}
+        className="text-[0.8rem] font-medium text-[#8ca5bc]"
+      >
         {label}
       </label>
       {children}

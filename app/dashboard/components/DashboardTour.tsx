@@ -8,7 +8,6 @@ import { NavItem, NavMode } from "../types/dashboard";
 const NAV_PROMPT_DISMISSED_KEY = "connectmw_nav_prompt_dismissed";
 const NAV_PROMPT_AUTO_HIDE_MS = 120000;
 
-
 type TourStep = {
   title: string;
   text: string;
@@ -147,15 +146,8 @@ export function DashboardTour({
   return (
     <>
       {showPrompt && (
-        <div className="fixed left-4 right-4 top-[72px] z-30 sm:left-auto sm:right-5 sm:w-[420px]" style={{ animation: "slideDown 0.2s ease" }}>
-          <div
-            className="relative overflow-hidden rounded-xl p-4"
-            style={{
-              background: "linear-gradient(135deg, var(--bg-secondary, #132333), var(--bg-elevated, #1a2e42))",
-              border: "1px solid var(--border-color, rgba(255,255,255,0.1))",
-              boxShadow: "0 18px 45px var(--shadow-color, rgba(0,0,0,0.35))",
-            }}
-          >
+        <div className="fixed left-4 right-4 top-[72px] z-30 sm:left-auto sm:right-5 sm:w-[420px] animate-[slideDown_0.2s_ease]">
+          <div className="relative overflow-hidden rounded-xl p-4 bg-[#132333] border border-white/10 shadow-[0_18px_45px_rgba(0,0,0,0.35)]">
             <div className="absolute -right-8 -top-8 h-28 w-28 rounded-full pointer-events-none" style={{ background: `${color}18` }} />
             <div className="flex items-start gap-3">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: `${color}18`, color }}>
@@ -163,37 +155,48 @@ export function DashboardTour({
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-[11px] font-bold uppercase tracking-widest mb-1" style={{ color }}>Quick setup guide</div>
-                <div className="text-sm font-bold" style={{ color: "var(--text-primary, white)" }}>
+                <div className="text-sm font-bold text-white">
                   {navMode === "bottom" ? "Bottom navigation is ready" : "Sidebar navigation is ready"}
                 </div>
-                <p className="text-xs leading-relaxed mt-1" style={{ color: "var(--text-secondary, #8ca5bc)" }}>
+                <p className="text-xs leading-relaxed mt-1 text-[#8ca5bc]">
                   We picked the best layout for this screen. Start the guide to walk through the dashboard, or switch layouts now.
                 </p>
               </div>
               <button
                 onClick={dismissPrompt}
-                className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-                style={{ color: "var(--text-secondary, #8ca5bc)", background: "var(--bg-muted, rgba(255,255,255,0.05))" }}
+                className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 bg-white/5 text-[#8ca5bc]"
                 aria-label="Dismiss navigation guide"
               >
                 <X size={14} />
               </button>
             </div>
             <div className="grid grid-cols-3 gap-2 mt-3">
-              <button onClick={startTour} className="flex items-center justify-center gap-2 rounded-lg py-2 text-xs font-semibold" style={{ background: color, color: "#ffffff" }}>
+              <button 
+                onClick={startTour} 
+                className="flex items-center justify-center gap-2 rounded-lg py-2 text-xs font-semibold text-white"
+                style={{ background: color }}
+              >
                 <Compass size={14} /> Guide
               </button>
               <button
                 onClick={() => chooseNavMode("bottom")}
-                className="flex items-center justify-center gap-2 rounded-lg py-2 text-xs font-semibold"
-                style={navMode === "bottom" ? { background: color, color: "#ffffff" } : { background: "var(--bg-muted, rgba(255,255,255,0.05))", color: "var(--text-secondary, #8ca5bc)" }}
+                className={`flex items-center justify-center gap-2 rounded-lg py-2 text-xs font-semibold ${
+                  navMode === "bottom" 
+                    ? "text-white" 
+                    : "text-[#8ca5bc]"
+                }`}
+                style={navMode === "bottom" ? { background: color } : { background: "rgba(255,255,255,0.05)" }}
               >
                 <PanelBottom size={14} /> Bottom
               </button>
               <button
                 onClick={() => chooseNavMode("sidebar")}
-                className="flex items-center justify-center gap-2 rounded-lg py-2 text-xs font-semibold"
-                style={navMode === "sidebar" ? { background: color, color: "#ffffff" } : { background: "var(--bg-muted, rgba(255,255,255,0.05))", color: "var(--text-secondary, #8ca5bc)" }}
+                className={`flex items-center justify-center gap-2 rounded-lg py-2 text-xs font-semibold ${
+                  navMode === "sidebar" 
+                    ? "text-white" 
+                    : "text-[#8ca5bc]"
+                }`}
+                style={navMode === "sidebar" ? { background: color } : { background: "rgba(255,255,255,0.05)" }}
               >
                 <PanelLeft size={14} /> Sidebar
               </button>
@@ -205,13 +208,7 @@ export function DashboardTour({
       {!tourOpen && (
         <button
           onClick={startTour}
-          className="fixed right-4 top-[72px] z-30 rounded-full px-4 py-2.5 text-xs font-bold flex items-center gap-2 transition-all hover:-translate-y-0.5 sm:right-5"
-          style={{
-            background: "var(--bg-secondary, #132333)",
-            color: "var(--text-primary, white)",
-            border: "1px solid var(--border-color, rgba(255,255,255,0.1))",
-            boxShadow: "0 12px 32px var(--shadow-color, rgba(0,0,0,0.3))",
-          }}
+          className="fixed right-4 top-[72px] z-30 rounded-full px-4 py-2.5 text-xs font-bold flex items-center gap-2 transition-all hover:-translate-y-0.5 sm:right-5 bg-[#132333] text-white border border-white/10 shadow-[0_12px_32px_rgba(0,0,0,0.3)]"
         >
           <Compass size={15} style={{ color }} />
           Start guide
@@ -219,16 +216,9 @@ export function DashboardTour({
       )}
 
       {tourOpen && currentStep && (
-        <div className="fixed left-4 right-4 top-[72px] z-50 sm:left-1/2 sm:right-auto sm:w-[500px] sm:-translate-x-1/2" style={{ animation: "slideDown 0.2s ease" }}>
-          <div
-            className="overflow-hidden rounded-2xl"
-            style={{
-              background: "var(--bg-secondary, #132333)",
-              border: "1px solid var(--border-color, rgba(255,255,255,0.1))",
-              boxShadow: "0 24px 70px rgba(0,0,0,0.45)",
-            }}
-          >
-            <div className="h-1.5" style={{ background: "var(--bg-muted, rgba(255,255,255,0.08))" }}>
+        <div className="fixed left-4 right-4 top-[72px] z-50 sm:left-1/2 sm:right-auto sm:w-[500px] sm:-translate-x-1/2 animate-[slideDown_0.2s_ease]">
+          <div className="overflow-hidden rounded-2xl bg-[#132333] border border-white/10 shadow-[0_24px_70px_rgba(0,0,0,0.45)]">
+            <div className="h-1.5 bg-white/8">
               <div className="h-full transition-all duration-300" style={{ width: `${progress}%`, background: color }} />
             </div>
 
@@ -241,21 +231,20 @@ export function DashboardTour({
                   <div className="text-[11px] font-bold uppercase tracking-widest mb-1" style={{ color }}>
                     Step {stepIndex + 1} of {steps.length}
                   </div>
-                  <h2 className="text-base font-black" style={{ color: "var(--text-primary, white)" }}>{currentStep.title}</h2>
-                  <p className="text-xs leading-relaxed mt-1" style={{ color: "var(--text-secondary, #8ca5bc)" }}>{currentStep.text}</p>
+                  <h2 className="text-base font-black text-white">{currentStep.title}</h2>
+                  <p className="text-xs leading-relaxed mt-1 text-[#8ca5bc]">{currentStep.text}</p>
                 </div>
                 <button
                   onClick={closeTour}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center"
-                  style={{ background: "var(--bg-muted, rgba(255,255,255,0.05))", color: "var(--text-secondary, #8ca5bc)" }}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center bg-white/5 text-[#8ca5bc]"
                   aria-label="Close dashboard guide"
                 >
                   <X size={15} />
                 </button>
               </div>
 
-              <div className="mt-4 rounded-xl p-3" style={{ background: "var(--bg-elevated, #1a2e42)", border: "1px solid var(--border-color, rgba(255,255,255,0.07))" }}>
-                <div className="flex items-center gap-2 text-xs" style={{ color: "var(--text-secondary, #8ca5bc)" }}>
+              <div className="mt-4 rounded-xl p-3 bg-[#1a2e42] border border-white/7">
+                <div className="flex items-center gap-2 text-xs text-[#8ca5bc]">
                   <Compass size={14} style={{ color }} />
                   The page behind this card changes as you move through the guide.
                 </div>
@@ -264,8 +253,7 @@ export function DashboardTour({
               <div className="mt-4 flex items-center justify-between gap-2">
                 <button
                   onClick={closeTour}
-                  className="rounded-lg px-3 py-2 text-xs font-semibold"
-                  style={{ color: "var(--text-secondary, #8ca5bc)", background: "transparent" }}
+                  className="rounded-lg px-3 py-2 text-xs font-semibold bg-transparent text-[#8ca5bc]"
                 >
                   Skip
                 </button>
@@ -273,15 +261,14 @@ export function DashboardTour({
                   <button
                     onClick={goPrevious}
                     disabled={stepIndex === 0}
-                    className="rounded-lg px-3 py-2 text-xs font-semibold flex items-center gap-1 disabled:opacity-40"
-                    style={{ background: "var(--bg-muted, rgba(255,255,255,0.05))", color: "var(--text-primary, white)" }}
+                    className="rounded-lg px-3 py-2 text-xs font-semibold flex items-center gap-1 disabled:opacity-40 bg-white/5 text-white"
                   >
                     <ChevronLeft size={14} /> Previous
                   </button>
                   <button
                     onClick={goNext}
-                    className="rounded-lg px-3 py-2 text-xs font-semibold flex items-center gap-1"
-                    style={{ background: color, color: "#ffffff" }}
+                    className="rounded-lg px-3 py-2 text-xs font-semibold flex items-center gap-1 text-white"
+                    style={{ background: color }}
                   >
                     {stepIndex === steps.length - 1 ? "Finish" : "Next"}
                     {stepIndex < steps.length - 1 && <ChevronRight size={14} />}
@@ -295,6 +282,3 @@ export function DashboardTour({
     </>
   );
 }
-
-
-

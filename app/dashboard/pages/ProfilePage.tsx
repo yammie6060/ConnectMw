@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { PageShell } from '../components/PageShell';
 import { Camera, MapPin, Edit2, Mail, Phone, Briefcase, Save, Star, User, Globe } from 'lucide-react';
 import { authService } from '@/services/auth.service';
@@ -67,9 +67,13 @@ export function ProfilePage({ color, user, meta, onSessionRefresh }: ProfilePage
     ];
   }, [profileListings, user.activeProviderId]);
 
-  const setField = (key: keyof typeof profile) => (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setProfile(current => ({ ...current, [key]: event.target.value }));
-  };
+  // FIXED: The setField function now properly captures the event value
+  const setField = useCallback((key: keyof typeof profile) => {
+    return (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      const value = event.target.value; // Capture value immediately
+      setProfile(current => ({ ...current, [key]: value }));
+    };
+  }, []);
 
   function toProfilePayload(nextProfile = profile) {
     return {
@@ -164,9 +168,13 @@ export function ProfilePage({ color, user, meta, onSessionRefresh }: ProfilePage
       <div className="mt-1.5 flex items-center gap-2 rounded-xl px-3 py-2.5"
         style={{ background: "var(--bg-elevated, #1a2e42)", border: "1px solid var(--border-color, rgba(255,255,255,0.07))" }}>
         <Icon size={14} style={{ color }} />
-        <input value={value} onChange={onChange} disabled={!editMode || disabled}
+        <input 
+          value={value} 
+          onChange={onChange} 
+          disabled={!editMode || disabled}
           className="min-w-0 flex-1 bg-transparent text-sm outline-none disabled:opacity-100"
-          style={{ color: "var(--text-primary, white)" }} />
+          style={{ color: "var(--text-primary, white)" }} 
+        />
       </div>
     </label>
   );
@@ -234,9 +242,14 @@ export function ProfilePage({ color, user, meta, onSessionRefresh }: ProfilePage
 
           <label className="block mt-4">
             <span className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-secondary, #8ca5bc)" }}>About</span>
-            <textarea value={profile.bio} onChange={setField("bio")} disabled={!editMode} rows={4}
+            <textarea 
+              value={profile.bio} 
+              onChange={setField("bio")} 
+              disabled={!editMode} 
+              rows={4}
               className="mt-1.5 w-full rounded-xl p-3 text-sm resize-none outline-none disabled:opacity-100"
-              style={{ background: "var(--bg-elevated, #1a2e42)", border: "1px solid var(--border-color, rgba(255,255,255,0.07))", color: "var(--text-primary, white)" }} />
+              style={{ background: "var(--bg-elevated, #1a2e42)", border: "1px solid var(--border-color, rgba(255,255,255,0.07))", color: "var(--text-primary, white)" }} 
+            />
           </label>
         </div>
       </div>

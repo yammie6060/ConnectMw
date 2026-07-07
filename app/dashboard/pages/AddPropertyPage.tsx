@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { PageShell } from "../components/PageShell";
-import { Check, Home, UploadCloud, X, Plus, Edit3, Trash2, ChevronRight } from "lucide-react";
+import { Check, Home, MapPin, UploadCloud, X, Plus, Edit3, Trash2, ChevronRight } from "lucide-react";
 import { mediaUrl, providerService, ServiceListing } from "@/services/provider.service";
 import { SessionUser } from "../types/dashboard";
 import { canActAsStaff, loadStaffProviderOptions, ProviderOption, sessionProviderOptions } from "../utils/providerAccess";
@@ -27,6 +27,10 @@ const emptyForm = {
   image_urls: [] as string[],
   amenity_ids: [] as string[],
   is_available: true,
+  // H2 fix: optional per-listing GPS. Left blank, the backend falls back
+  // to the provider's coordinates for geo-search.
+  latitude: "",
+  longitude: "",
 };
 
 // Modal Component
@@ -54,6 +58,7 @@ function PropertyFormModal({
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [locating, setLocating] = useState(false);
   const [error, setError] = useState("");
   const [activeStep, setActiveStep] = useState(1);
   const staffMode = canActAsStaff(user);
@@ -75,6 +80,8 @@ function PropertyFormModal({
         image_urls: editItem.images?.length ? editItem.images.map((image) => image.image_url) : editItem.primary_image ? [editItem.primary_image] : [],
         amenity_ids: editItem.amenity_ids ?? editItem.amenities?.map((amenity) => amenity.id) ?? [],
         is_available: editItem.is_available,
+        latitude: editItem.latitude != null ? String(editItem.latitude) : "",
+        longitude: editItem.longitude != null ? String(editItem.longitude) : "",
       });
     }
   }, [editItem]);
@@ -115,6 +122,29 @@ function PropertyFormModal({
     ...current,
     amenity_ids: current.amenity_ids.includes(id) ? current.amenity_ids.filter((item) => item !== id) : [...current.amenity_ids, id],
   }));
+
+  const useCurrentLocation = () => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setError("Location services aren't available in this browser.");
+      return;
+    }
+    setLocating(true);
+    setError("");
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setForm((f) => ({
+          ...f,
+          latitude: position.coords.latitude.toFixed(7),
+          longitude: position.coords.longitude.toFixed(7),
+        }));
+        setLocating(false);
+      },
+      () => {
+        setError("Could not get your location. You can enter coordinates manually.");
+        setLocating(false);
+      },
+    );
+  };
 
   const fieldStyle = { 
     background: "var(--bg-secondary, #132333)", 
@@ -201,6 +231,8 @@ function PropertyFormModal({
       area_sqm: form.area_sqm ? Number(form.area_sqm) : null,
       is_available: form.is_available,
       amenity_ids: form.amenity_ids,
+      latitude: form.latitude ? Number(form.latitude) : null,
+      longitude: form.longitude ? Number(form.longitude) : null,
       images: form.image_urls.map((image_url, index) => ({ image_url, is_primary: index === 0 })),
     };
 
@@ -320,10 +352,31 @@ function PropertyFormModal({
                 <input value={form.district} onChange={set("district")} placeholder="District" style={fieldStyle} />
                 <input value={form.street_address} onChange={set("street_address")} placeholder="Street / Area" style={fieldStyle} />
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
                 <input type="number" value={form.bedrooms} onChange={set("bedrooms")} placeholder="Bedrooms" style={fieldStyle} />
                 <input type="number" value={form.bathrooms} onChange={set("bathrooms")} placeholder="Bathrooms" style={fieldStyle} />
                 <input type="number" value={form.area_sqm} onChange={set("area_sqm")} placeholder="Area (sqm)" style={fieldStyle} />
+              </div>
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-semibold" style={{ color: "#8ca5bc" }}>GPS Coordinates (optional)</span>
+                  <button
+                    type="button"
+                    onClick={useCurrentLocation}
+                    disabled={locating}
+                    className="flex items-center gap-1 text-[11px] font-bold disabled:opacity-50"
+                    style={{ color }}
+                  >
+                    <MapPin size={11} /> {locating ? "Locating..." : "Use my location"}
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <input type="number" step="any" value={form.latitude} onChange={set("latitude")} placeholder="Latitude" style={fieldStyle} />
+                  <input type="number" step="any" value={form.longitude} onChange={set("longitude")} placeholder="Longitude" style={fieldStyle} />
+                </div>
+                <p className="text-[10px] mt-1.5" style={{ color: "#6b8a9e" }}>
+                  Useful if this property is in a different location than your provider profile's default address.
+                </p>
               </div>
             </div>
 

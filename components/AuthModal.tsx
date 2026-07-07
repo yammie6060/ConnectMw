@@ -61,6 +61,23 @@ function getErrorMessage(err: unknown): string {
   return "Something went wrong. Please try again.";
 }
 
+/**
+ * H1 fix: /auth/login returns 429 with a Retry-After header when an
+ * account or IP has too many recent failed attempts. Format that into a
+ * friendly "try again in N minutes" message rather than showing the raw
+ * backend detail string, which is written for API consumers, not end users.
+ */
+function formatLoginError(err: unknown): string {
+  if (err instanceof ApiError && err.status === 429) {
+    if (err.retryAfterSeconds) {
+      const minutes = Math.ceil(err.retryAfterSeconds / 60);
+      return `Too many login attempts. Please try again in ${minutes} minute${minutes === 1 ? "" : "s"}.`;
+    }
+    return "Too many login attempts. Please wait a few minutes before trying again.";
+  }
+  return getErrorMessage(err);
+}
+
 function resetDashboardLanding() {
   Object.keys(localStorage)
     .filter((key) => key.startsWith("connectmw_dashboard_active_item:"))
@@ -260,6 +277,10 @@ export default function AuthCard({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  // H1 fix: while true, the sign-in form is locked out (429 from
+  // /auth/login). Disables the submit button so the person isn't tempted
+  // to keep retrying and extending their own lockout window.
+  const [loginLocked, setLoginLocked] = useState(false);
 
   useEffect(() => {
     providerService
@@ -294,7 +315,7 @@ export default function AuthCard({
   const isProvider = signup.account_type !== "customer";
   const selectedType = accountTypes.find((t) => t.value === signup.account_type);
 
-  // ── Handlers ────────────────────────────────────────────────────────────────
+  //  Handlers 
 
   const handleSignup = async (e: FormEvent) => {
     e.preventDefault();
@@ -338,6 +359,7 @@ export default function AuthCard({
         email: signin.email.trim(),
         password: signin.password,
       });
+      setLoginLocked(false);
       setSuccess("Welcome back! Redirecting…");
       resetDashboardLanding();
       onAuthenticated?.();
@@ -352,7 +374,13 @@ export default function AuthCard({
         setVerificationEmail(signin.email.trim());
         switchView("verifyEmail");
       }
-      setError(getErrorMessage(err));
+      if (err instanceof ApiError && err.status === 429) {
+        setLoginLocked(true);
+        if (err.retryAfterSeconds) {
+          setTimeout(() => setLoginLocked(false), err.retryAfterSeconds * 1000);
+        }
+      }
+      setError(formatLoginError(err));
     } finally {
       setSubmitting(false);
     }
@@ -455,7 +483,7 @@ export default function AuthCard({
     }
   };
 
-  // ── Render ───────────────────────────────────────────────────────────────────
+  //  Render 
 
   return (
     <>
@@ -495,10 +523,6 @@ export default function AuthCard({
       <div
         aria-hidden
         className="fixed inset-0 -z-10 pointer-events-none"
-        style={{
-          background:
-            "radial-gradient(ellipse at center, rgb(245 171 32 / 0.12) 0%, transparent 62%)",
-        }}
       />
 
       {/* Page wrapper */}
@@ -534,7 +558,7 @@ export default function AuthCard({
               </div>
             )}
 
-            {/* ── Sign In ── */}
+            {/*  Sign In  */}
             {view === "signin" && (
               <form onSubmit={handleSignin} noValidate>
                 {error && <Alert type="error" message={error} />}
@@ -575,11 +599,15 @@ export default function AuthCard({
                   </LinkButton>
                 </div>
 
-                <SubmitButton disabled={submitting}>
+                <SubmitButton disabled={submitting || loginLocked}>
                   {submitting && (
                     <Loader2 size={15} className="animate-spin" />
                   )}
-                  {submitting ? "Signing In…" : "Sign In →"}
+                  {loginLocked
+                    ? "Try again shortly…"
+                    : submitting
+                      ? "Signing In…"
+                      : "Sign In →"}
                 </SubmitButton>
 
                 <p className="text-center mt-4 text-xs text-slate-400">
@@ -591,7 +619,7 @@ export default function AuthCard({
               </form>
             )}
 
-            {/* ── Sign Up ── */}
+            {/*  Sign Up  */}
             {view === "signup" && (
               <form onSubmit={handleSignup} noValidate>
                 {error && <Alert type="error" message={error} />}
@@ -718,7 +746,7 @@ export default function AuthCard({
               </form>
             )}
 
-            {/* ── Verify Email ── */}
+            {/*  Verify Email  */}
             {view === "verifyEmail" && (
               <form onSubmit={handleVerifyEmail}>
                 <LinkButton
@@ -790,7 +818,7 @@ export default function AuthCard({
               </form>
             )}
 
-            {/* ── Forgot Password ── */}
+            {/*  Forgot Password  */}
             {view === "forgotPassword" && (
               <div>
                 <LinkButton

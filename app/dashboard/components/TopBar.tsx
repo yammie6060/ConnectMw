@@ -106,7 +106,7 @@ export function TopBar({
               ref={notificationButtonRef}
               onClick={handleNotificationClick}
               className="relative w-9 h-9 flex items-center justify-center rounded-lg transition-colors cursor-pointer"
-              style={{ 
+              style={{
                 background: "var(--bg-muted, rgba(255,255,255,0.05))", 
                 border: "1px solid var(--border-color, rgba(255,255,255,0.1))", 
                 color: "var(--text-secondary, #8ca5bc)"

@@ -30,7 +30,7 @@ export function Stat({ label, value, icon: Icon }: StatProps) {
         </div>
         <div
           className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center flex-shrink-0"
-          style={{ background: `var(--color, #3b82f6)18`, color: "var(--color, #3b82f6)" }}
+          style={{ background: "var(--color, #3b82f6)18", color: "var(--color, #3b82f6)" }}
         >
           <Icon size={16} className="sm:w-[17px] sm:h-[17px]" />
         </div>

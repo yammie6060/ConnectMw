@@ -43,7 +43,7 @@ export function ReviewsPage({ color, user }: ReviewsPageProps) {
         <div className="text-center">
           <div className="text-4xl font-black" style={{ color }}>{average.toFixed(1)}</div>
           <div className="flex gap-0.5 justify-center mt-1">
-            {[1,2,3,4,5].map(s => <Star key={s} size={12} fill={s <= Math.round(average) ? color : "transparent"} style={{ color }} />)}
+            {[1,2,3,4,5].map(s => <Star key={s} size={12} fill={s <= Math.round(average) ? color : "transparent"} color={color} />)}
           </div>
           <div className="text-[11px] mt-1" style={{ color: "#8ca5bc" }}>{reviews.length} reviews</div>
         </div>
@@ -53,7 +53,7 @@ export function ReviewsPage({ color, user }: ReviewsPageProps) {
             return (
               <div key={stars} className="flex items-center gap-2 mb-1">
                 <span className="text-[10px] w-3" style={{ color: "#8ca5bc" }}>{stars}</span>
-                <Star size={9} style={{ color }} />
+                <Star size={9} color={color} />
                 <div className="flex-1 h-1.5 rounded-full" style={{ background: "rgba(255,255,255,0.07)" }}>
                   <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, background: color }} />
                 </div>
@@ -82,7 +82,7 @@ export function ReviewsPage({ color, user }: ReviewsPageProps) {
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <div className="flex gap-0.5">
-                    {[1,2,3,4,5].map(s => <Star key={s} size={10} fill={s <= rev.rating ? color : "transparent"} style={{ color }} />)}
+                    {[1,2,3,4,5].map(s => <Star key={s} size={10} fill={s <= rev.rating ? color : "transparent"} color={color} />)}
                   </div>
                   <span className="text-[10px]" style={{ color: "#8ca5bc" }}>{rev.created_at ? new Date(rev.created_at).toLocaleDateString() : ""}</span>
                 </div>

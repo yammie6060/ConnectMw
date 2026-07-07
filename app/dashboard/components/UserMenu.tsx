@@ -40,24 +40,32 @@ export function UserMenu({
 
   return (
     <div className="relative" ref={userMenuRef}>
-      <button onClick={() => setShowUserMenu(!showUserMenu)}
-        className="flex items-center gap-2 w-9 h-9 rounded-full transition-all cursor-pointer"
-        style={{ background: "linear-gradient(135deg, #1b4f6a, #f5ab20)" }}>
+      <button 
+        onClick={() => setShowUserMenu(!showUserMenu)}
+        className="flex items-center gap-2 w-9 h-9 rounded-full transition-all cursor-pointer bg-gradient-to-br from-[#1b4f6a] to-[#f5ab20]"
+      >
         <DashboardAvatar user={user} size="sm" className="w-full h-full" />
       </button>
 
       {showUserMenu && (
-        <div className="absolute right-0 top-[calc(100%+8px)] w-[280px] rounded-xl overflow-hidden z-50"
-          style={{ background: "var(--bg-secondary, #132333)", border: "1px solid var(--border-color, rgba(255,255,255,0.1))", boxShadow: "0 16px 40px var(--shadow-color, rgba(0,0,0,0.4))", animation: "slideDown 0.15s ease" }}>
+        <div className="absolute right-0 top-[calc(100%+8px)] w-[280px] rounded-xl overflow-hidden z-50 bg-[#132333] border border-white/10 shadow-[0_16px_40px_rgba(0,0,0,0.4)] animate-[slideDown_0.15s_ease]">
+          <style>{`
+            @keyframes slideDown {
+              from { opacity: 0; transform: translateY(-8px); }
+              to { opacity: 1; transform: translateY(0); }
+            }
+          `}</style>
           
           <div className="p-4 border-b border-white/10">
             <div className="flex items-center gap-3">
               <DashboardAvatar user={user} size="md" />
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-semibold truncate" style={{ color: "var(--text-primary, white)" }}>{user.firstName} {user.lastName}</div>
-                <div className="text-[11px] truncate" style={{ color: "var(--text-secondary, #8ca5bc)" }}>{user.email}</div>
-                <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full mt-1"
-                  style={{ background: `${color}20`, color }}>
+                <div className="text-sm font-semibold truncate text-white">{user.firstName} {user.lastName}</div>
+                <div className="text-[11px] truncate text-[#8ca5bc]">{user.email}</div>
+                <span 
+                  className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full mt-1"
+                  style={{ background: `${color}20`, color }}
+                >
                   <RoleIcon size={9} /> {meta.label}
                 </span>
               </div>
@@ -67,13 +75,17 @@ export function UserMenu({
           <div className="py-2">
             {user.canSwitchRoles && (
               <div className="px-4 py-2 border-b border-white/10 mb-2">
-                <div className="text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--text-secondary, #8ca5bc)" }}>Workspace</div>
+                <div className="text-[10px] font-semibold uppercase tracking-widest mb-2 text-[#8ca5bc]">Workspace</div>
                 <div className="space-y-1">
                   {user.roles.includes("admin") && (
                     <button
                       onClick={() => onSwitchWorkspace("admin", null)}
-                      className="w-full flex items-center gap-3 px-2 py-2 rounded-lg text-sm transition-colors hover:bg-white/5"
-                      style={user.activeRole === "admin" ? { color, background: `${color}14` } : { color: "var(--text-secondary, #8ca5bc)" }}
+                      className={`w-full flex items-center gap-3 px-2 py-2 rounded-lg text-sm transition-colors hover:bg-white/5 ${
+                        user.activeRole === "admin" 
+                          ? "text-[var(--accent-color)] bg-[var(--accent-color)]/8" 
+                          : "text-[#8ca5bc]"
+                      }`}
+                      style={{ '--accent-color': color } as React.CSSProperties}
                     >
                       <Shield size={16} />
                       <span className="flex-1 text-left">Admin Console</span>
@@ -83,8 +95,12 @@ export function UserMenu({
                   {!user.roles.includes("admin") && user.roles.includes("support") && (
                     <button
                       onClick={() => onSwitchWorkspace("support", null)}
-                      className="w-full flex items-center gap-3 px-2 py-2 rounded-lg text-sm transition-colors hover:bg-white/5"
-                      style={user.activeRole === "support" ? { color, background: `${color}14` } : { color: "var(--text-secondary, #8ca5bc)" }}
+                      className={`w-full flex items-center gap-3 px-2 py-2 rounded-lg text-sm transition-colors hover:bg-white/5 ${
+                        user.activeRole === "support" 
+                          ? "text-[var(--accent-color)] bg-[var(--accent-color)]/8" 
+                          : "text-[#8ca5bc]"
+                      }`}
+                      style={{ '--accent-color': color } as React.CSSProperties}
                     >
                       <HelpCircle size={16} />
                       <span className="flex-1 text-left">Support Desk</span>
@@ -93,8 +109,12 @@ export function UserMenu({
                   )}
                   <button
                     onClick={() => onSwitchWorkspace("customer", null)}
-                    className="w-full flex items-center gap-3 px-2 py-2 rounded-lg text-sm transition-colors hover:bg-white/5"
-                    style={user.activeRole === "customer" ? { color, background: `${color}14` } : { color: "var(--text-secondary, #8ca5bc)" }}
+                    className={`w-full flex items-center gap-3 px-2 py-2 rounded-lg text-sm transition-colors hover:bg-white/5 ${
+                      user.activeRole === "customer" 
+                        ? "text-[var(--accent-color)] bg-[var(--accent-color)]/8" 
+                        : "text-[#8ca5bc]"
+                    }`}
+                    style={{ '--accent-color': color } as React.CSSProperties}
                   >
                     <UserCircle size={16} />
                     <span className="flex-1 text-left">Customer</span>
@@ -104,8 +124,12 @@ export function UserMenu({
                     <button
                       key={provider.id}
                       onClick={() => onSwitchWorkspace(provider.role, provider.id)}
-                      className="w-full flex items-center gap-3 px-2 py-2 rounded-lg text-sm transition-colors hover:bg-white/5"
-                      style={user.activeProviderId === provider.id ? { color, background: `${color}14` } : { color: "var(--text-secondary, #8ca5bc)" }}
+                      className={`w-full flex items-center gap-3 px-2 py-2 rounded-lg text-sm transition-colors hover:bg-white/5 ${
+                        user.activeProviderId === provider.id 
+                          ? "text-[var(--accent-color)] bg-[var(--accent-color)]/8" 
+                          : "text-[#8ca5bc]"
+                      }`}
+                      style={{ '--accent-color': color } as React.CSSProperties}
                     >
                       <BriefcaseBusiness size={16} />
                       <span className="flex-1 min-w-0 text-left">
@@ -118,43 +142,48 @@ export function UserMenu({
                 </div>
               </div>
             )}
-            <button onClick={() => onNavigate("profile")} className="w-full flex items-center gap-3 px-4 py-2 text-sm transition-colors hover:bg-white/5" style={{ color: "var(--text-secondary, #8ca5bc)" }}>
+            <button 
+              onClick={() => onNavigate("profile")} 
+              className="w-full flex items-center gap-3 px-4 py-2 text-sm transition-colors hover:bg-white/5 text-[#8ca5bc]"
+            >
               <UserCircle size={16} /> Profile Settings
             </button>
-            <button onClick={() => onNavigate("billing")} className="w-full flex items-center gap-3 px-4 py-2 text-sm transition-colors hover:bg-white/5" style={{ color: "var(--text-secondary, #8ca5bc)" }}>
-              <CreditCard size={16} /> Billing & Plans
-            </button>
-            <button onClick={() => onNavigate("privacy")} className="w-full flex items-center gap-3 px-4 py-2 text-sm transition-colors hover:bg-white/5" style={{ color: "var(--text-secondary, #8ca5bc)" }}>
-              <Shield size={16} /> Privacy & Security
-            </button>
-            <button onClick={() => onNavigate("help")} className="w-full flex items-center gap-3 px-4 py-2 text-sm transition-colors hover:bg-white/5" style={{ color: "var(--text-secondary, #8ca5bc)" }}>
-              <HelpCircle size={16} /> Help & Support
-            </button>
 
-            <button onClick={onToggleTheme}
-              className="w-full flex items-center justify-between px-4 py-2 text-sm transition-colors hover:bg-white/5"
-              style={{ color: "var(--text-secondary, #8ca5bc)" }}>
+            <button 
+              onClick={onToggleTheme}
+              className="w-full flex items-center justify-between px-4 py-2 text-sm transition-colors hover:bg-white/5 text-[#8ca5bc]"
+            >
               <div className="flex items-center gap-3">
                 {isDarkMode ? <Sun size={16} /> : <Moon size={16} />}
                 <span>{isDarkMode ? "Light Mode" : "Dark Mode"}</span>
               </div>
-              <div className="w-8 h-4 rounded-full p-0.5 transition-colors" style={{ background: "rgba(245,171,32,0.2)" }}>
+              <div className="w-8 h-4 rounded-full p-0.5 transition-colors bg-[#f5ab20]/20">
                 <div className="w-3 h-3 rounded-full bg-[#f5ab20] transition-transform" style={{ transform: isDarkMode ? "translateX(0)" : "translateX(16px)" }} />
               </div>
             </button>
 
-            {/* Navigation Mode Switcher - Show on ALL devices (both mobile and desktop) */}
+            {/* Navigation Mode Switcher - Show on ALL devices */}
             <div className="px-4 py-2">
-              <div className="text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: "var(--text-secondary, #8ca5bc)" }}>Navigation</div>
+              <div className="text-[10px] font-semibold uppercase tracking-widest mb-2 text-[#8ca5bc]">Navigation</div>
               <div className="flex gap-2">
-                <button onClick={() => onSwitchNavMode("sidebar")}
-                  className="flex-1 flex items-center justify-center gap-2 py-1.5 rounded-lg text-xs font-medium transition-all"
-                  style={navMode === "sidebar" ? { background: "#f5ab20", color: "#0d1f2d" } : { background: "var(--bg-muted, rgba(255,255,255,0.05))", color: "var(--text-secondary, #8ca5bc)" }}>
+                <button 
+                  onClick={() => onSwitchNavMode("sidebar")}
+                  className={`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                    navMode === "sidebar" 
+                      ? "bg-[#f5ab20] text-[#0d1f2d]" 
+                      : "bg-white/5 text-[#8ca5bc]"
+                  }`}
+                >
                   <PanelLeft size={12} /> Sidebar
                 </button>
-                <button onClick={() => onSwitchNavMode("bottom")}
-                  className="flex-1 flex items-center justify-center gap-2 py-1.5 rounded-lg text-xs font-medium transition-all"
-                  style={navMode === "bottom" ? { background: "#f5ab20", color: "#0d1f2d" } : { background: "var(--bg-muted, rgba(255,255,255,0.05))", color: "var(--text-secondary, #8ca5bc)" }}>
+                <button 
+                  onClick={() => onSwitchNavMode("bottom")}
+                  className={`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                    navMode === "bottom" 
+                      ? "bg-[#f5ab20] text-[#0d1f2d]" 
+                      : "bg-white/5 text-[#8ca5bc]"
+                  }`}
+                >
                   <PanelBottom size={12} /> Bottom
                 </button>
               </div>
@@ -162,7 +191,10 @@ export function UserMenu({
           </div>
 
           <div className="border-t border-white/10 p-2">
-            <button onClick={onLogout} className="w-full flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-medium text-[#ef4444] hover:bg-red-500/10 transition-colors">
+            <button 
+              onClick={onLogout} 
+              className="w-full flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-medium text-red-500 hover:bg-red-500/10 transition-colors"
+            >
               <LogOut size={16} /> Sign Out
             </button>
           </div>

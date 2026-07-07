@@ -15,6 +15,8 @@ type ApiErrorDetail = string | { msg?: string; message?: string };
 export class ApiError extends Error {
   status: number;
   data: unknown;
+  retryAfterSeconds: any;
+  retryAfterSeconds: number;
 
   constructor(message: string, status: number, data: unknown) {
     super(message);

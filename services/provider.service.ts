@@ -13,9 +13,9 @@ export type ProviderTypeOption = {
 };
 
 export type BusinessHour = {
-  day_of_week: number; 
-  opens_at: string | null; 
-  closes_at: string | null; 
+  day_of_week: number;
+  opens_at: string | null;
+  closes_at: string | null;
   is_closed: boolean;
 };
 
@@ -68,6 +68,8 @@ export type ListingImage = {
 };
 
 export type ServiceListing = {
+  deposit_type: string | null | undefined;
+  deposit_amount: number | null | undefined;
   id: string;
   kind: "property" | "spare" | "beauty";
   provider_id: string;
@@ -84,6 +86,11 @@ export type ServiceListing = {
   bedrooms?: number | null;
   bathrooms?: number | null;
   area_sqm?: number | null;
+  // H2 fix: the listing's own coordinates, if set. May be null even when
+  // the provider has coordinates — the backend falls back to the
+  // provider's lat/lng for search/distance when these are unset.
+  latitude?: number | null;
+  longitude?: number | null;
   property_type?: string | null;
   property_type_display?: string | null;
   amenities?: Array<{ id: string; name: string }>;
@@ -130,6 +137,7 @@ export type ServiceListing = {
   updated_at?: string | null;
   grouped_items?: ServiceListing[];
   grouped_count?: number;
+  distance_km?: number;
   display_location?: string | null;
 };
 
@@ -154,6 +162,10 @@ export type PropertyListingPayload = {
   bedrooms?: number | null;
   bathrooms?: number | null;
   area_sqm?: number | null;
+  // H2 fix: optional per-listing GPS. Omit to fall back to the provider's
+  // coordinates for geo-search (unchanged legacy behaviour).
+  latitude?: number | null;
+  longitude?: number | null;
   is_available: boolean;
   amenity_ids?: string[];
   images: Array<{ image_url: string; is_primary?: boolean }>;
@@ -172,6 +184,9 @@ export type SpareListingPayload = {
   price?: number | null;
   quantity: number;
   city?: string;
+  // H2 fix: optional per-listing GPS (e.g. a specific depot).
+  latitude?: number | null;
+  longitude?: number | null;
   is_available: boolean;
   images: Array<{ image_url: string; is_primary?: boolean }>;
 };
@@ -184,20 +199,45 @@ export type BeautyServicePayload = {
   duration_minutes?: number | null;
   price?: number | null;
   price_options?: BeautyPriceOption[];
+  // H2 fix: optional per-listing GPS (e.g. a mobile/onsite service
+  // location that differs from the provider's registered address).
+  latitude?: number | null;
+  longitude?: number | null;
   is_available: boolean;
   images: Array<{ image_url: string; is_primary?: boolean }>;
 };
 
+// Guest checkout: captured whenever the caller has no auth token. The
+// backend requires one of {signed-in user, guest_contact} on every
+// createListingAction call.
+export type GuestContact = {
+  name: string;
+  phone: string;
+  email?: string;
+};
+
 export type ListingActionPayload = {
   message?: string;
+  notes?: string;
+
+  // Spare parts
   quantity?: number;
+  delivery_method?: "pickup" | "delivery";
+  delivery_address?: string;
+
+  // Beauty bookings
   booking_date?: string;
   start_time?: string;
-  notes?: string;
+  service_mode?: "onsite" | "mobile";
+  price_option_id?: string;
+  service_address?: string;
+
+  // Guest checkout
+  guest_contact?: GuestContact;
 };
 
 export type PaymentCheckout = {
-  payment_id: string;
+  payment_id: string | null;
   amount?: number | null;
   currency?: string;
   payment_status?: string;
@@ -205,7 +245,6 @@ export type PaymentCheckout = {
   checkout_url?: string | null;
   message?: string;
 };
-
 export type ServiceInteraction = {
   id: string;
   kind: "property" | "spare" | "beauty";
@@ -216,16 +255,25 @@ export type ServiceInteraction = {
   order_number?: string | null;
   quantity?: number | null;
   total_amount?: number | null;
-  booking_date?: string | null;
+  booking_date?: string | null; 
   start_time?: string | null;
   end_time?: string | null;
+  service_mode?: "onsite" | "mobile" | null;
+  service_address?: string | null;
+  delivery_method?: "pickup" | "delivery" | null;
+  delivery_address?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
   listing: ServiceListing | null;
   provider: ServiceListing["provider"];
-  customer?: { id: string; email: string; phone: string; full_name?: string | null } | null;
+  customer?: {
+    id: string | null;
+    email: string | null;
+    phone: string | null;
+    full_name?: string | null;
+    is_guest?: boolean;
+  } | null;
 };
-
 export type ProviderReview = {
   id: string;
   rating: number;
@@ -425,6 +473,25 @@ export const providerService = {
     });
   },
 
+  // Guest self-service: look up your own submissions by phone number, no
+  // sign-in required. Only returns still-unclaimed guest rows.
+  lookupGuestInteractions(phone: string) {
+    return apiRequest<{ items: ServiceInteraction[]; total: number }>(
+      `/services/interactions/lookup?phone=${encodeURIComponent(phone)}`,
+      { method: "GET" }
+    );
+  },
+
+  // Call right after a successful sign-in/registration if a guest contact
+  // was stored locally — links any matching unclaimed requests to the
+  // now-authenticated account.
+  claimGuestInteractions() {
+    return apiRequest<{ claimed: number }>("/services/interactions/claim", {
+      method: "POST",
+      headers: authHeaders(),
+    });
+  },
+
   listReviews(providerId?: string) {
     const query = providerId ? `?provider_id=${providerId}` : "";
     return apiRequest<{ items: ProviderReview[]; total: number; average: number }>(`/services/reviews${query}`, {
@@ -556,12 +623,30 @@ export const providerService = {
     });
   },
 
+  getPaymentStatus(paymentId: string) {
+    return apiRequest<{
+      id: string; status: string; amount: number | null; currency: string;
+      payment_type: string; reference_type: string; reference_label: string | null;
+      transaction_reference: string | null; payer_name: string | null; is_guest: boolean;
+      paid_at: string | null; created_at: string | null;
+    }>(`/services/payments/${paymentId}`, { method: "GET" });
+  },
+
+  verifyPaymentPublic(paymentId: string) {
+    return apiRequest<{ status: string }>(`/services/payments/${paymentId}/verify-public`, {
+      method: "POST",
+    });
+  },
+
+
   verifyPaychanguPayment(txRef: string) {
     return apiRequest<{ status: string; payment_id: string }>(`/services/payments/paychangu/verify/${txRef}`, {
       method: "POST",
       headers: authHeaders(),
     });
   },
+
+
 
   updateInteractionStatus(interactionType: "rental_application" | "booking" | "order", interactionId: string, status: string) {
     return apiRequest<ServiceInteraction>(`/services/interactions/${interactionType}/${interactionId}/status`, {

@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -34,12 +33,7 @@ const slides = [
   },
 ];
 
-const stats = [
-  { num: "3+", label: "Services" },
-  { num: "3", label: "Cities" },
-  { num: "0%", label: "Fees" },
-  { num: "24/7", label: "Access" },
-];
+const SLIDE_DURATION = 6000;
 
 export default function Hero({ onOpenModal }: HeroProps) {
   const [current, setCurrent] = useState(0);
@@ -48,7 +42,7 @@ export default function Hero({ onOpenModal }: HeroProps) {
   useEffect(() => {
     const timer = setInterval(() => {
       goTo((prev) => (prev + 1) % slides.length);
-    }, 6000);
+    }, SLIDE_DURATION);
     return () => clearInterval(timer);
   }, []);
 
@@ -67,10 +61,14 @@ export default function Hero({ onOpenModal }: HeroProps) {
   return (
     <section
       id="home"
-      className="relative flex flex-col lg:flex-row items-stretch py-20 overflow-hidden bg-[#0d1f2d]"
+      className="relative flex flex-col lg:flex-row items-stretch overflow-hidden bg-[#0d1f2d]"
+      style={{
+        borderRadius: "0 0 2rem 2rem", 
+        marginBottom: "-1px", 
+      }}
     >
       {/* ── LEFT PANEL ── */}
-      <div className="relative z-10 flex flex-col justify-center px-[10%] pt-[100px] pb-20 w-full lg:w-1/2 flex-shrink-0">
+      <div className="relative z-10 flex flex-col justify-center px-[10%] pt-[80px] pb-16 w-full lg:w-1/2 flex-shrink-0">
         <div
           className="absolute pointer-events-none"
           style={{
@@ -83,8 +81,12 @@ export default function Hero({ onOpenModal }: HeroProps) {
 
         {/* Headline */}
         <h1
-          className="text-4xl font-black leading-[1.1] tracking-[-1px] mb-4 text-white"
-          style={{ animation: "fadeUp 0.7s 0.1s ease both", opacity: 0, animationFillMode: "forwards" }}
+          className="font-black leading-[1.05] tracking-[-1.5px] mb-4 text-white text-3xl sm:text-4xl md:text-5xl lg:text-6xl"
+          style={{
+            animation: "fadeUp 0.7s 0.1s ease both",
+            opacity: 0,
+            animationFillMode: "forwards",
+          }}
         >
           Malawi&apos;s{" "}
           <em className="not-italic" style={{ color: "#f5ab20" }}>All-in-One</em>
@@ -100,39 +102,36 @@ export default function Hero({ onOpenModal }: HeroProps) {
 
         {/* CTAs */}
         <div
-          className="flex flex-wrap gap-4 mb-12"
+          className="flex flex-wrap gap-4 mb-5"
           style={{ animation: "fadeUp 0.7s 0.3s ease both", opacity: 0, animationFillMode: "forwards" }}
         >
           <a
             href="#services"
-            className="inline-flex items-center gap-2 px-7 py-2.5 rounded-full text-sm font-bold text-[#0d1f2d] bg-[#f5ab20] no-underline transition-all duration-200 hover:bg-[#e8941a] hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(245,166,35,0.35)]"
+            className="inline-flex items-center gap-2 px-7 py-2.5 rounded-full text-sm font-bold text-[#0d1f2d] bg-[#f5ab20] no-underline transition-all duration-200 hover:bg-[#e8941a] hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(245,166,35,0.35)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f5ab20]"
           >
             Explore →
           </a>
           <button
             onClick={() => onOpenModal("signup")}
-            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-medium text-white bg-transparent border border-[rgba(255,255,255,0.25)] transition-all duration-200 hover:border-[#f5ab20] hover:text-[#f5ab20] cursor-pointer"
+            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-medium text-white bg-transparent border border-[rgba(255,255,255,0.25)] transition-all duration-200 hover:border-[#f5ab20] hover:text-[#f5ab20] cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f5ab20]"
           >
             Join Free
           </button>
         </div>
-
-        {/* Stats */}
-        <div
-          className="flex flex-wrap gap-8 pt-6 border-t border-[rgba(255,255,255,0.08)]"
-          style={{ animation: "fadeUp 0.7s 0.4s ease both", opacity: 0, animationFillMode: "forwards" }}
-        >
-          {stats.map((s) => (
-            <div key={s.label}>
-              <div className="text-2xl font-black" style={{ color: "#f5ab20" }}>{s.num}</div>
-              <div className="text-[0.7rem] text-[#8ca5bc] mt-0.5 tracking-wide">{s.label}</div>
-            </div>
-          ))}
-        </div>
       </div>
 
       {/* ── RIGHT PANEL (desktop) ── */}
-      <div className="hidden lg:flex items-center justify-center w-1/2 p-8 relative">
+      <div className="hidden lg:flex items-center justify-center w-1/2 relative py-28">
+        <div
+          className="absolute pointer-events-none"
+          style={{
+            bottom: "-160px", right: "-160px",
+            width: "480px", height: "480px",
+            borderRadius: "50%",
+            background: "radial-gradient(circle,rgba(245,171,32,.10) 0%,transparent 32%)",
+          }}
+        />
+
         <div
           className="relative w-full rounded-2xl overflow-hidden shadow-2xl"
           style={{ maxWidth: "600px", maxHeight: "500px" }}
@@ -181,32 +180,13 @@ export default function Hero({ onOpenModal }: HeroProps) {
               {slide.description}
             </p>
 
-            <div className="flex items-center gap-3 flex-wrap">
-              <a
-                href="#services"
-                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[11px] font-bold no-underline transition-all duration-200 hover:-translate-y-0.5 bg-[#f5ab20] text-[#0d1f2d]"
-                style={{ boxShadow: "0 2px 8px rgba(245,171,32,0.4)" }}
-              >
-                {slide.cta} →
-              </a>
-              <div className="flex items-center gap-1.5">
-                {slides.map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => goTo(i)}
-                    className="transition-all duration-300 rounded-full border-0 cursor-pointer"
-                    style={{
-                      width: i === current ? "16px" : "4px",
-                      height: "4px",
-                      background:
-                        i === current ? "#f5ab20" : "rgba(255,255,255,0.35)",
-                      padding: 0,
-                    }}
-                    aria-label={`Go to slide ${i + 1}`}
-                  />
-                ))}
-              </div>
-            </div>
+            <a
+              href="#services"
+              className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[11px] font-bold no-underline transition-all duration-200 hover:-translate-y-0.5 bg-[#f5ab20] text-[#0d1f2d]"
+              style={{ boxShadow: "0 2px 8px rgba(245,171,32,0.4)" }}
+            >
+              {slide.cta} →
+            </a>
           </div>
 
           {/* Counter */}
@@ -221,14 +201,14 @@ export default function Hero({ onOpenModal }: HeroProps) {
           <div className="absolute top-1/2 right-2 -translate-y-1/2 flex flex-col gap-1.5">
             <button
               onClick={() => goTo((current - 1 + slides.length) % slides.length)}
-              className="w-6 h-6 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 border-0 cursor-pointer bg-black/50 backdrop-blur-sm text-white text-xs"
+              className="w-6 h-6 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 border-0 cursor-pointer bg-black/50 backdrop-blur-sm text-white text-xs focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f5ab20]"
               aria-label="Previous slide"
             >
               ↑
             </button>
             <button
               onClick={() => goTo((current + 1) % slides.length)}
-              className="w-6 h-6 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 border-0 cursor-pointer bg-black/50 backdrop-blur-sm text-white text-xs"
+              className="w-6 h-6 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 border-0 cursor-pointer bg-black/50 backdrop-blur-sm text-white text-xs focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f5ab20]"
               aria-label="Next slide"
             >
               ↓
@@ -253,32 +233,16 @@ export default function Hero({ onOpenModal }: HeroProps) {
         />
       </div>
 
-      {/* Mobile slide dots */}
-      <div className="lg:hidden absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-10">
-        {slides.map((_, i) => (
-          <button
-            key={i}
-            onClick={() => goTo(i)}
-            className="transition-all duration-300 rounded-full border-0 cursor-pointer"
-            style={{
-              width: i === current ? "20px" : "5px",
-              height: "5px",
-              background: i === current ? "#f5ab20" : "rgba(255,255,255,0.4)",
-              padding: 0,
-            }}
-            aria-label={`Go to slide ${i + 1}`}
-          />
-        ))}
-      </div>
-
       <style jsx global>{`
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(20px); }
           to { opacity: 1; transform: translateY(0); }
         }
-        @keyframes pulse2 {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.5; transform: scale(1.2); }
+        @media (prefers-reduced-motion: reduce) {
+          [style*="fadeUp"] {
+            animation: none !important;
+            opacity: 1 !important;
+          }
         }
       `}</style>
     </section>

@@ -42,7 +42,7 @@ export const footerLinkGroups: FooterLinkGroup[] = [
     heading: "Company",
     links: [
       { label: "About Us", href: "/about" },
-      { label: "MiNDTech Company", href: "https://mindtechs.vercel.app/", external: true },
+      { label: "DigiRise Limited", href: "https://digirisemalawi.vercel.app/", external: true },
       { label: "Careers", href: "/company/careers" },
       { label: "Press & Media", href: "/company/press-media" },
       { label: "Contact", href: "/contact" },
@@ -211,9 +211,9 @@ export const standalonePages: Record<string, MarketingPageContent> = {
 
 export const companyPages: Record<string, MarketingPageContent> = {
   mindtech: {
-    eyebrow: "MiNDTech Company",
-    title: "Digital Mind. Reliable Technology.",
-    subtitle: "MiNDTech Company is the Malawian technology company behind ConnectMW.",
+    eyebrow: "DigiRise Limited",
+    title: "",
+    subtitle: "DigiRise Limited is the Malawian technology company behind ConnectMW.",
     intro:
       "MiNDTech builds practical digital products for local markets, with a focus on trust, access, and reliable service delivery.",
     primaryCta: { label: "Contact MiNDTech", href: "/contact" },
@@ -272,7 +272,7 @@ export const companyPages: Record<string, MarketingPageContent> = {
     primaryCta: { label: "Contact press team", href: "/contact" },
     secondaryCta: { label: "About us", href: "/about" },
     highlights: [
-      { title: "Company story", description: "ConnectMW is a MiNDTech Company product built in Malawi." },
+      { title: "Company story", description: "ConnectMW is a DigiRise Limited product built in Malawi." },
       { title: "Product focus", description: "The platform covers rentals, beauty services, and auto spares." },
       { title: "Press contact", description: "Media enquiries can be routed through the contact page." },
     ],
@@ -285,7 +285,7 @@ export const companyPages: Record<string, MarketingPageContent> = {
       {
         title: "Brand notes",
         body:
-          "The product name is ConnectMW. The company name is MiNDTech Company. The tagline is Digital Mind. Reliable Technology.",
+          "The product name is ConnectMW. The company name is DigiRise Limited. The tagline is ",
       },
     ],
   },

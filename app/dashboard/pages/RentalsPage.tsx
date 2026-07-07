@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { PageShell } from "../components/PageShell";
-import { Camera, Heart, Search, SlidersHorizontal, MapPin, Bed, Scissors, Wrench, Home, Clock, Package, X, Send, ShoppingCart, CalendarCheck, Mail, Phone } from "lucide-react";
+import { Camera, Heart, Search, SlidersHorizontal, MapPin, MapPinned, LocateFixed, Bed, Scissors, Wrench, Home, Clock, Package, X, Send, ShoppingCart, CalendarCheck, Mail, Phone, Grid, List, ChevronLeft, ChevronRight } from "lucide-react";
 import { mediaUrl, providerService, ServiceInteraction, ServiceListing } from "@/services/provider.service";
 
 type Category = "All" | "Rentals" | "Beauty" | "Spare Parts";
@@ -9,6 +9,16 @@ const CATEGORIES: Category[] = ["All", "Rentals", "Beauty", "Spare Parts"];
 const CATEGORY_ICON: Record<string, React.ElementType> = { Rentals: Home, Beauty: Scissors, "Spare Parts": Wrench };
 
 interface RentalsPageProps { color: string }
+
+interface GeoCoords {
+  latitude: number;
+  longitude: number;
+}
+
+type LocationStatus = "idle" | "detecting" | "granted" | "denied" | "unavailable";
+
+const GRID_PAGE_SIZE = 12;
+const LIST_PAGE_SIZE = 10;
 
 function categoryFor(item: ServiceListing): Category {
   if (item.kind === "property") return "Rentals";
@@ -22,6 +32,11 @@ function money(value?: number | null, unit = "") {
 
 function locationFor(item: ServiceListing) {
   return item.display_location || [item.street_address, item.city, item.district].filter(Boolean).join(", ") || item.provider_location || item.provider?.physical_address || item.city || "Location not set";
+}
+
+function distanceLabel(item: ServiceListing) {
+  if (item.distance_km == null) return null;
+  return item.distance_km < 1 ? `${Math.round(item.distance_km * 1000)} m away` : `${item.distance_km} km away`;
 }
 
 function metaFor(item: ServiceListing) {
@@ -109,6 +124,10 @@ function groupBrowseListings(items: ServiceListing[]) {
   return Array.from(groups.values()).map((groupItems) => {
     const sorted = [...groupItems].sort((a, b) => (Date.parse(b.updated_at || b.created_at || "") || 0) - (Date.parse(a.updated_at || a.created_at || "") || 0));
     const representative = sorted[0];
+    const nearestDistance = sorted
+      .map((item) => item.distance_km)
+      .filter((value): value is number => value != null)
+      .sort((a, b) => a - b)[0];
     return {
       ...representative,
       id: sorted.map((item) => item.id).join("__"),
@@ -118,6 +137,7 @@ function groupBrowseListings(items: ServiceListing[]) {
       display_location: locationFor(representative),
       primary_image: imageForDisplay({ ...representative, grouped_items: sorted }),
       price: numericPriceFor(representative),
+      distance_km: nearestDistance ?? representative.distance_km,
       is_available: sorted.some((item) => item.is_available),
       status: sorted.some((item) => item.is_available) ? (sorted.length > 1 ? `${sorted.length} available` : representative.status) : "Unavailable",
     } as ServiceListing;
@@ -130,14 +150,17 @@ function modeLabel(mode: string) {
   return mode;
 }
 
-function ListingCard({ listing, color, isSaved, viewerInteraction, onToggleSave, onOpen }: { listing: ServiceListing; color: string; isSaved: boolean; viewerInteraction: ServiceInteraction | null; onToggleSave: () => void; onOpen: () => void }) {
+// ---------------------------------------------------------------------------
+// Grid Card
+// ---------------------------------------------------------------------------
+function ListingGridCard({ listing, color, isSaved, viewerInteraction, onToggleSave, onOpen }: { listing: ServiceListing; color: string; isSaved: boolean; viewerInteraction: ServiceInteraction | null; onToggleSave: () => void; onOpen: () => void }) {
   const [imgLoaded, setImgLoaded] = useState(false);
   const category = categoryFor(listing);
   const CatIcon = CATEGORY_ICON[category];
   const isUnavailable = !listing.is_available;
   const MetaIcon = category === "Rentals" ? Bed : category === "Beauty" ? Clock : Package;
-  const ctaLabel = category === "Rentals" ? "Enquire Now" : category === "Beauty" ? "Book Now" : "Order Now";
   const statusColor = isUnavailable ? "#8ca5bc" : listing.status === "Low Stock" ? "#f5ab20" : "#10b981";
+  const distance = distanceLabel(listing);
 
   return (
     <div 
@@ -173,11 +196,16 @@ function ListingCard({ listing, color, isSaved, viewerInteraction, onToggleSave,
         <span className="absolute bottom-3 left-3 text-[10px] font-bold px-2 py-0.5 rounded-full backdrop-blur-sm" style={{ background: `${statusColor}22`, color: statusColor }}>
           {listing.status}
         </span>
-        {viewerInteraction && (
+        {viewerInteraction ? (
           <span className="absolute bottom-3 right-3 text-[10px] font-bold px-2 py-0.5 rounded-full capitalize backdrop-blur-sm" style={{ background: "rgba(0,0,0,0.65)", color: "#fff" }}>
             {viewerInteraction.status}
           </span>
-        )}
+        ) : distance ? (
+          <span className="absolute bottom-3 right-3 flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full backdrop-blur-sm" style={{ background: `${color}22`, color }}>
+            <MapPinned size={10} />
+            {distance}
+          </span>
+        ) : null}
       </div>
       
       <div className="p-3 sm:p-4 flex flex-col flex-1">
@@ -192,6 +220,9 @@ function ListingCard({ listing, color, isSaved, viewerInteraction, onToggleSave,
         <div className="flex items-center gap-1 text-[10px] sm:text-[11px] mb-2 truncate" style={{ color: "#8ca5bc" }}>
           <MapPin size={10} className="flex-shrink-0" /> 
           <span className="truncate">{locationFor(listing)}</span>
+          {distance && viewerInteraction && (
+            <span className="flex-shrink-0 font-bold" style={{ color }}>· {distance}</span>
+          )}
         </div>
         <div className="flex items-center gap-1 text-[10px] sm:text-[11px] mb-3" style={{ color: "#8ca5bc" }}>
           <MetaIcon size={10} className="flex-shrink-0" /> 
@@ -216,10 +247,143 @@ function ListingCard({ listing, color, isSaved, viewerInteraction, onToggleSave,
             className="px-2 sm:px-3 py-1.5 rounded-xl text-[10px] sm:text-[11px] font-bold transition-all hover:brightness-110 active:scale-95"
             style={isUnavailable ? { background: "rgba(255,255,255,0.05)", color: "#8ca5bc" } : { background: color, color: "#0d1f2d" }}
           >
-            {isUnavailable ? "Unavailable" : listing.grouped_count && listing.grouped_count > 1 ? "View" : ctaLabel}
+            {isUnavailable ? "Unavailable" : listing.grouped_count && listing.grouped_count > 1 ? "View" : "View"}
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// List Row
+// ---------------------------------------------------------------------------
+function ListingListRow({ listing, color, isSaved, viewerInteraction, onToggleSave, onOpen }: { listing: ServiceListing; color: string; isSaved: boolean; viewerInteraction: ServiceInteraction | null; onToggleSave: () => void; onOpen: () => void }) {
+  const category = categoryFor(listing);
+  const CatIcon = CATEGORY_ICON[category];
+  const isUnavailable = !listing.is_available;
+  const MetaIcon = category === "Rentals" ? Bed : category === "Beauty" ? Clock : Package;
+  const statusColor = isUnavailable ? "#8ca5bc" : listing.status === "Low Stock" ? "#f5ab20" : "#10b981";
+  const distance = distanceLabel(listing);
+
+  return (
+    <div 
+      onClick={onOpen} 
+      className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 p-3 rounded-xl transition-all hover:bg-white/[0.03] hover:-translate-y-0.5 cursor-pointer"
+      style={{ background: "var(--bg-secondary, #132333)", border: "1px solid rgba(255,255,255,0.07)" }}
+    >
+      <div className="flex items-center gap-3 w-full sm:w-auto">
+        <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-lg overflow-hidden shrink-0" style={{ background: `${color}15` }}>
+          {listing.primary_image ? (
+            <img src={mediaUrl(listing.primary_image)} alt={listing.title} className="w-full h-full object-cover" loading="lazy" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center" style={{ color: "#8ca5bc" }}><CatIcon size={16} /></div>
+          )}
+          <div className="absolute top-0 right-0 flex gap-0.5 p-0.5">
+            <button 
+              onClick={(event) => { event.stopPropagation(); onToggleSave(); }} 
+              className="w-6 h-6 rounded-lg flex items-center justify-center transition-all hover:scale-110 backdrop-blur-sm"
+              style={{ background: "rgba(0,0,0,0.45)" }}
+            >
+              <Heart size={11} style={{ color: isSaved ? "#ef4444" : "#fff" }} fill={isSaved ? "#ef4444" : "transparent"} />
+            </button>
+          </div>
+        </div>
+        <div className="min-w-0 flex-1 sm:hidden">
+          <h4 className="text-sm font-bold truncate" style={{ color: "var(--text-primary, white)" }}>{listing.title}</h4>
+          <div className="text-sm font-black" style={{ color }}>{priceFor(listing, category === "Rentals" ? "/mo" : "")}</div>
+        </div>
+      </div>
+
+      <div className="min-w-0 flex-1 hidden sm:block">
+        <div className="flex items-center gap-2">
+          <h4 className="text-sm font-bold truncate" style={{ color: "var(--text-primary, white)" }}>{listing.title}</h4>
+          <span className="shrink-0 inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full" style={{ background: `${statusColor}20`, color: statusColor }}>
+            {listing.status}
+          </span>
+          <span className="shrink-0 inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full" style={{ background: `${color}15`, color }}>
+            <CatIcon size={9} /> {category}
+          </span>
+        </div>
+        <div className="flex items-center gap-3 mt-1 flex-wrap">
+          <span className="flex items-center gap-1 text-[11px]" style={{ color: "#8ca5bc" }}>
+            <MetaIcon size={11} /> {groupedMeta(listing)}
+          </span>
+          <span className="flex items-center gap-1 text-[11px]" style={{ color: "#8ca5bc" }}>
+            <MapPin size={11} /> {locationFor(listing)}
+          </span>
+          {distance && (
+            <span className="flex items-center gap-1 text-[11px] font-bold" style={{ color }}>
+              <MapPinned size={11} /> {distance}
+            </span>
+          )}
+          {viewerInteraction && (
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full capitalize" style={{ background: `${color}15`, color }}>
+              {viewerInteraction.status}
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between w-full sm:w-auto sm:gap-4">
+        <div className="hidden sm:block text-right shrink-0">
+          <div className="text-sm font-black" style={{ color }}>{priceFor(listing, category === "Rentals" ? "/mo" : "")}</div>
+        </div>
+        <div className="flex items-center gap-2 sm:gap-1.5 shrink-0">
+          <span className="sm:hidden inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full" style={{ background: `${statusColor}20`, color: statusColor }}>
+            {listing.status}
+          </span>
+          <button 
+            onClick={(event) => { event.stopPropagation(); onOpen(); }} 
+            className="px-3 py-1.5 rounded-xl text-[10px] sm:text-[11px] font-bold transition-all hover:brightness-110 active:scale-95"
+            style={isUnavailable ? { background: "rgba(255,255,255,0.05)", color: "#8ca5bc" } : { background: color, color: "#0d1f2d" }}
+          >
+            View
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Pagination controls
+// ---------------------------------------------------------------------------
+function Pagination({ page, pageCount, onChange, color }: { page: number; pageCount: number; onChange: (page: number) => void; color: string }) {
+  if (pageCount <= 1) return null;
+  const pages = Array.from({ length: pageCount }, (_, i) => i + 1).filter(
+    (p) => p === 1 || p === pageCount || Math.abs(p - page) <= 1,
+  );
+  return (
+    <div className="flex items-center justify-center gap-1 sm:gap-1.5 mt-5">
+      <button
+        onClick={() => onChange(Math.max(1, page - 1))}
+        disabled={page === 1}
+        className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center disabled:opacity-30 transition-colors"
+        style={{ background: "var(--bg-secondary, #132333)", border: "1px solid rgba(255,255,255,0.07)" }}
+      >
+        <ChevronLeft size={12} style={{ color: "#8ca5bc" }} />
+      </button>
+      {pages.map((p, idx) => (
+        <span key={p} className="flex items-center">
+          {idx > 0 && pages[idx - 1] !== p - 1 && <span className="px-1 text-xs" style={{ color: "#6b8a9e" }}>…</span>}
+          <button
+            onClick={() => onChange(p)}
+            className="min-w-[28px] h-7 sm:min-w-8 sm:h-8 px-1.5 sm:px-2 rounded-lg text-[11px] sm:text-xs font-bold transition-colors"
+            style={p === page ? { background: color, color: "#0d1f2d" } : { background: "var(--bg-secondary, #132333)", color: "#8ca5bc", border: "1px solid rgba(255,255,255,0.07)" }}
+          >
+            {p}
+          </button>
+        </span>
+      ))}
+      <button
+        onClick={() => onChange(Math.min(pageCount, page + 1))}
+        disabled={page === pageCount}
+        className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center disabled:opacity-30 transition-colors"
+        style={{ background: "var(--bg-secondary, #132333)", border: "1px solid rgba(255,255,255,0.07)" }}
+      >
+        <ChevronRight size={12} style={{ color: "#8ca5bc" }} />
+      </button>
     </div>
   );
 }
@@ -244,6 +408,7 @@ function ListingDetailModal({ listing, color, interactionByListingId, onClose }:
   const ActionIcon = activeListing.kind === "property" ? Send : activeListing.kind === "beauty" ? CalendarCheck : ShoppingCart;
   const activeInteraction = interactionByListingId.get(activeListing.id) ?? null;
   const slotBooked = activeListing.kind === "beauty" && Boolean(startTime) && Boolean(activeListing.booked_slots?.some((slot) => slot.booking_date === bookingDate && slot.start_time?.slice(0, 5) === startTime.slice(0, 5)));
+  const activeDistance = distanceLabel(activeListing);
 
   useEffect(() => {
     setActiveImage(0);
@@ -363,6 +528,12 @@ function ListingDetailModal({ listing, color, interactionByListingId, onClose }:
               <div className="flex items-center gap-1.5 text-xs mt-1.5" style={{ color: "#8ca5bc" }}>
                 <MapPin size={12} className="flex-shrink-0" /> 
                 <span className="flex-1">{locationFor(activeListing)}</span>
+                {activeDistance && (
+                  <span className="flex-shrink-0 flex items-center gap-1 font-bold" style={{ color }}>
+                    <MapPinned size={12} />
+                    {activeDistance}
+                  </span>
+                )}
               </div>
             </div>
 
@@ -531,12 +702,68 @@ export function RentalsPage({ color }: RentalsPageProps) {
   const [photoSearchMessage, setPhotoSearchMessage] = useState("");
   const [selectedListing, setSelectedListing] = useState<ServiceListing | null>(null);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [page, setPage] = useState(1);
 
+  // Location filtering
+  const [locationText, setLocationText] = useState("");
+  const [coords, setCoords] = useState<GeoCoords | null>(null);
+  const [locationStatus, setLocationStatus] = useState<LocationStatus>("idle");
+
+  const requestLocation = useCallback(() => {
+    if (!navigator.geolocation) {
+      setLocationStatus("unavailable");
+      return;
+    }
+    setLocationStatus("detecting");
+    setCoords(null);
+    navigator.geolocation.getCurrentPosition(
+      ({ coords: c }) => {
+        setCoords({ latitude: c.latitude, longitude: c.longitude });
+        setLocationStatus("granted");
+        setLocationText("");
+      },
+      () => {
+        setLocationStatus("denied");
+      },
+      { enableHighAccuracy: false, timeout: 9000, maximumAge: 600_000 }
+    );
+  }, []);
+
+  const handleLocationTextChange = (value: string) => {
+    setLocationText(value);
+    if (value) setCoords(null);
+  };
+
+  const fetchListings = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await providerService.browseServices(undefined, search || undefined, {
+        location: locationText || undefined,
+        latitude: coords?.latitude,
+        longitude: coords?.longitude,
+        limit: 60,
+      });
+      setListings(res.data?.items ?? []);
+    } catch {
+      setListings([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [search, locationText, coords]);
+
+  // Detect location once on mount
   useEffect(() => {
-    providerService.browseServices(undefined, search)
-      .then((res) => setListings(res.data?.items ?? []))
-      .finally(() => setLoading(false));
-  }, [search]);
+    requestLocation();
+  }, [requestLocation]);
+
+  // Debounced fetch whenever search, location text, or coords change
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchListings();
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [fetchListings]);
 
   useEffect(() => {
     providerService
@@ -583,28 +810,80 @@ export function RentalsPage({ color }: RentalsPageProps) {
     return matchCat && matchSearch && matchSaved;
   });
 
+  // When we have the user's coordinates, sort results nearest-first for display
+  const sortedFiltered = useMemo(() => {
+    if (!coords) return filtered;
+    return [...filtered].sort((a, b) => (a.distance_km ?? Infinity) - (b.distance_km ?? Infinity));
+  }, [filtered, coords]);
+
+  // Reset to page 1 whenever the result set or view mode changes
+  useEffect(() => { setPage(1); }, [category, search, showSaved, viewMode]);
+
+  const pageSize = viewMode === "grid" ? GRID_PAGE_SIZE : LIST_PAGE_SIZE;
+  const pageCount = Math.max(1, Math.ceil(sortedFiltered.length / pageSize));
+  const currentPage = Math.min(page, pageCount);
+  const paginated = sortedFiltered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
   const counts = useMemo(() => {
     const values: Record<string, number> = { All: browseListings.length, Rentals: 0, Beauty: 0, "Spare Parts": 0 };
     browseListings.forEach((listing) => { values[categoryFor(listing)] += 1; });
     return values;
   }, [browseListings]);
 
+  const locationHint = useMemo(() => {
+    if (locationStatus === "detecting") return "Detecting your location...";
+    if (locationStatus === "granted" && !locationText) return "Showing results sorted by distance from you.";
+    if (locationStatus === "denied") return "Location access denied — type a city to filter results.";
+    if (locationStatus === "unavailable") return "Geolocation unavailable — type a city to filter results.";
+    if (locationText) return `Filtering by "${locationText}".`;
+    return "Allow location access to show services near you.";
+  }, [locationStatus, locationText]);
+
   return (
     <PageShell title="Browse" subtitle="Find rentals, beauty services, and spare parts near you" color={color}>
-      {/* Search and Filter Bar */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-5">
-        <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-xl transition-all focus-within:ring-2" style={{ background: "var(--bg-secondary, #132333)", border: "1px solid rgba(255,255,255,0.07)" }}>
-          <Search size={14} style={{ color: "#8ca5bc" }} />
-          <input 
-            value={search} 
-            onChange={e => setSearch(e.target.value)} 
-            placeholder="Search by name, provider or location..." 
-            className="flex-1 bg-transparent text-sm outline-none min-w-0"
-            style={{ color: "var(--text-primary, white)" }} 
-          />
+      {/* Main container with centering and max-width */}
+      <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
+        {/* Search & Location Bar */}
+        <div className="flex flex-col sm:flex-row gap-3 mb-2">
+          <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-xl transition-all focus-within:ring-2" style={{ background: "var(--bg-secondary, #132333)", border: "1px solid rgba(255,255,255,0.07)" }}>
+            <Search size={14} style={{ color: "#8ca5bc" }} />
+            <input 
+              value={search} 
+              onChange={e => setSearch(e.target.value)} 
+              placeholder="Search by name, provider or location..." 
+              className="flex-1 bg-transparent text-sm outline-none min-w-0"
+              style={{ color: "var(--text-primary, white)" }} 
+            />
+          </div>
+
+          <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-xl transition-all focus-within:ring-2" style={{ background: "var(--bg-secondary, #132333)", border: "1px solid rgba(255,255,255,0.07)" }}>
+            <MapPin size={14} style={{ color: "#8ca5bc" }} />
+            <input
+              value={locationText}
+              onChange={(e) => handleLocationTextChange(e.target.value)}
+              placeholder={locationStatus === "detecting" ? "Detecting location..." : "Override city / district"}
+              className="flex-1 bg-transparent text-sm outline-none min-w-0"
+              style={{ color: "var(--text-primary, white)" }}
+            />
+            <button
+              onClick={requestLocation}
+              className="rounded-md p-1 transition-all hover:bg-white/5 hover:scale-110 flex-shrink-0"
+              style={{ color: locationStatus === "granted" && !locationText ? "#10b981" : color }}
+              title={locationStatus === "granted" && !locationText ? "Using GPS location" : "Use my location"}
+            >
+              <LocateFixed size={15} />
+            </button>
+          </div>
         </div>
-        
-        <div className="flex gap-2">
+
+        <div className="flex items-center gap-1.5 text-[11px] mb-4" style={{ color: "#8ca5bc" }}>
+          {locationStatus === "detecting" && <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full" style={{ background: color }} />}
+          {locationStatus === "granted" && !locationText && <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: "#10b981" }} />}
+          {locationHint}
+        </div>
+
+        {/* Actions Bar with View Toggle */}
+        <div className="flex gap-2 mb-5">
           <button 
             onClick={() => setShowSaved(v => !v)} 
             className="px-3 py-2 rounded-xl flex items-center gap-1.5 text-xs font-bold transition-all hover:scale-105 active:scale-95"
@@ -627,121 +906,152 @@ export function RentalsPage({ color }: RentalsPageProps) {
           >
             <SlidersHorizontal size={13} /> 
           </button>
-        </div>
-      </div>
-      
-      {photoSearchMessage && (
-        <div className="text-xs mb-4 animate-in slide-in-from-top-1" style={{ color: "#8ca5bc" }}>
-          {photoSearchMessage}
-        </div>
-      )}
-      
-      {/* Categories - Desktop */}
-      <div className="hidden lg:flex gap-2 flex-wrap mb-6 overflow-x-auto pb-2 scrollbar-thin">
-        {CATEGORIES.map(cat => {
-          const Icon = cat !== "All" ? CATEGORY_ICON[cat] : null;
-          const active = category === cat;
-          return (
-            <button 
-              key={cat} 
-              onClick={() => setCategory(cat)} 
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all hover:scale-105 active:scale-95 whitespace-nowrap"
-              style={active ? { background: color, color: "#0d1f2d" } : { background: "var(--bg-secondary, #132333)", color: "#8ca5bc", border: "1px solid rgba(255,255,255,0.07)" }}
-            >
-              {Icon && <Icon size={11} />}
-              {cat}
-              <span className="text-[10px] px-1.5 py-0.5 rounded-full font-black" style={active ? { background: "rgba(0,0,0,0.2)", color: "#0d1f2d" } : { background: `${color}18`, color }}>
-                {counts[cat] ?? 0}
-              </span>
+
+          <div className="flex rounded-lg overflow-hidden ml-auto" style={{ border: "1px solid rgba(255,255,255,0.07)" }}>
+            <button onClick={() => setViewMode("list")} className="p-2 transition-colors" style={{ background: viewMode === "list" ? "var(--bg-elevated, #1a2e42)" : "transparent" }}>
+              <List size={15} style={{ color: viewMode === "list" ? color : "#8ca5bc" }} />
             </button>
-          );
-        })}
-      </div>
-      
-      {/* Mobile Categories Drawer */}
-      {mobileFiltersOpen && (
-        <>
-          <div className="fixed inset-0 z-40 lg:hidden" style={{ background: "rgba(0,0,0,0.5)" }} onClick={() => setMobileFiltersOpen(false)} />
-          <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden rounded-t-2xl animate-in slide-in-from-bottom-48" style={{ background: "var(--bg-secondary, #132333)", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
-            <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: "rgba(255,255,255,0.07)" }}>
-              <h3 className="font-bold" style={{ color: "var(--text-primary, white)" }}>Categories</h3>
-              <button onClick={() => setMobileFiltersOpen(false)} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "rgba(255,255,255,0.06)" }}>
-                <X size={14} />
+            <button onClick={() => setViewMode("grid")} className="p-2 transition-colors" style={{ background: viewMode === "grid" ? "var(--bg-elevated, #1a2e42)" : "transparent" }}>
+              <Grid size={15} style={{ color: viewMode === "grid" ? color : "#8ca5bc" }} />
+            </button>
+          </div>
+        </div>
+        
+        {photoSearchMessage && (
+          <div className="text-xs mb-4 animate-in slide-in-from-top-1" style={{ color: "#8ca5bc" }}>
+            {photoSearchMessage}
+          </div>
+        )}
+        
+        {/* Categories - Desktop */}
+        <div className="hidden lg:flex gap-2 flex-wrap mb-6 overflow-x-auto pb-2 scrollbar-thin">
+          {CATEGORIES.map(cat => {
+            const Icon = cat !== "All" ? CATEGORY_ICON[cat] : null;
+            const active = category === cat;
+            return (
+              <button 
+                key={cat} 
+                onClick={() => setCategory(cat)} 
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all hover:scale-105 active:scale-95 whitespace-nowrap"
+                style={active ? { background: color, color: "#0d1f2d" } : { background: "var(--bg-secondary, #132333)", color: "#8ca5bc", border: "1px solid rgba(255,255,255,0.07)" }}
+              >
+                {Icon && <Icon size={11} />}
+                {cat}
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full font-black" style={active ? { background: "rgba(0,0,0,0.2)", color: "#0d1f2d" } : { background: `${color}18`, color }}>
+                  {counts[cat] ?? 0}
+                </span>
               </button>
-            </div>
-            <div className="p-4 max-h-[60vh] overflow-y-auto">
-              <div className="flex flex-col gap-2">
-                {CATEGORIES.map(cat => {
-                  const Icon = cat !== "All" ? CATEGORY_ICON[cat] : null;
-                  const active = category === cat;
-                  return (
-                    <button 
-                      key={cat} 
-                      onClick={() => { setCategory(cat); setMobileFiltersOpen(false); }} 
-                      className="flex items-center justify-between px-3 py-3 rounded-xl text-sm font-bold transition-all"
-                      style={active ? { background: color, color: "#0d1f2d" } : { background: "var(--bg-elevated, #1a2e42)", color: "#8ca5bc" }}
-                    >
-                      <span className="flex items-center gap-2">
-                        {Icon && <Icon size={16} />}
-                        {cat}
-                      </span>
-                      <span className="text-xs px-2 py-1 rounded-full" style={active ? { background: "rgba(0,0,0,0.2)", color: "#0d1f2d" } : { background: `${color}18`, color }}>
-                        {counts[cat] ?? 0}
-                      </span>
-                    </button>
-                  );
-                })}
+            );
+          })}
+        </div>
+        
+        {/* Mobile Categories Drawer */}
+        {mobileFiltersOpen && (
+          <>
+            <div className="fixed inset-0 z-40 lg:hidden" style={{ background: "rgba(0,0,0,0.5)" }} onClick={() => setMobileFiltersOpen(false)} />
+            <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden rounded-t-2xl animate-in slide-in-from-bottom-48" style={{ background: "var(--bg-secondary, #132333)", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
+              <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: "rgba(255,255,255,0.07)" }}>
+                <h3 className="font-bold" style={{ color: "var(--text-primary, white)" }}>Categories</h3>
+                <button onClick={() => setMobileFiltersOpen(false)} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "rgba(255,255,255,0.06)" }}>
+                  <X size={14} />
+                </button>
+              </div>
+              <div className="p-4 max-h-[60vh] overflow-y-auto">
+                <div className="flex flex-col gap-2">
+                  {CATEGORIES.map(cat => {
+                    const Icon = cat !== "All" ? CATEGORY_ICON[cat] : null;
+                    const active = category === cat;
+                    return (
+                      <button 
+                        key={cat} 
+                        onClick={() => { setCategory(cat); setMobileFiltersOpen(false); }} 
+                        className="flex items-center justify-between px-3 py-3 rounded-xl text-sm font-bold transition-all"
+                        style={active ? { background: color, color: "#0d1f2d" } : { background: "var(--bg-elevated, #1a2e42)", color: "#8ca5bc" }}
+                      >
+                        <span className="flex items-center gap-2">
+                          {Icon && <Icon size={16} />}
+                          {cat}
+                        </span>
+                        <span className="text-xs px-2 py-1 rounded-full" style={active ? { background: "rgba(0,0,0,0.2)", color: "#0d1f2d" } : { background: `${color}18`, color }}>
+                          {counts[cat] ?? 0}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
+          </>
+        )}
+        
+        {/* Results Count */}
+        <div className="text-xs mb-4 flex justify-between items-center" style={{ color: "#8ca5bc" }}>
+          <span>{loading ? "Loading services..." : `${sortedFiltered.length} result${sortedFiltered.length !== 1 ? "s" : ""}`}</span>
+          {showSaved && <span className="text-[10px] px-2 py-1 rounded-full" style={{ background: "#ef444420", color: "#ef4444" }}>Saved only</span>}
+        </div>
+        
+        {/* Listings Grid/List View */}
+        {loading ? (
+          <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
+            {[1,2,3,4,5,6].map(i => (
+              <div key={i} className="rounded-2xl overflow-hidden animate-pulse" style={{ background: "var(--bg-secondary, #132333)", height: 280 }} />
+            ))}
           </div>
-        </>
-      )}
-      
-      {/* Results Count */}
-      <div className="text-xs mb-4 flex justify-between items-center" style={{ color: "#8ca5bc" }}>
-        <span>{loading ? "Loading services..." : `${filtered.length} result${filtered.length !== 1 ? "s" : ""}`}</span>
-        {showSaved && <span className="text-[10px] px-2 py-1 rounded-full" style={{ background: "#ef444420", color: "#ef4444" }}>Saved only</span>}
+        ) : sortedFiltered.length > 0 ? (
+          <>
+            {viewMode === "grid" ? (
+              <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
+                {paginated.map(listing => (
+                  <ListingGridCard 
+                    key={listing.id} 
+                    listing={listing} 
+                    color={color} 
+                    isSaved={saved.includes(listing.id)} 
+                    viewerInteraction={viewerInteractionFor(listing, interactionByListingId)}
+                    onToggleSave={() => toggleSave(listing.id)} 
+                    onOpen={() => setSelectedListing(listing)} 
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {paginated.map(listing => (
+                  <ListingListRow 
+                    key={listing.id} 
+                    listing={listing} 
+                    color={color} 
+                    isSaved={saved.includes(listing.id)} 
+                    viewerInteraction={viewerInteractionFor(listing, interactionByListingId)}
+                    onToggleSave={() => toggleSave(listing.id)} 
+                    onOpen={() => setSelectedListing(listing)} 
+                  />
+                ))}
+              </div>
+            )}
+            
+            {sortedFiltered.length > 0 && (
+              <Pagination page={currentPage} pageCount={pageCount} onChange={setPage} color={color} />
+            )}
+          </>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-16 sm:py-24 gap-4 text-center">
+            <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: `${color}15` }}>
+              <Search size={24} style={{ color }} />
+            </div>
+            <div>
+              <p className="text-sm font-medium" style={{ color: "var(--text-primary, white)" }}>No results found</p>
+              <p className="text-xs mt-1" style={{ color: "#8ca5bc" }}>Try adjusting your search or filters</p>
+            </div>
+            <button 
+              onClick={() => { setSearch(""); setCategory("All"); setShowSaved(false); setLocationText(""); requestLocation(); }} 
+              className="mt-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all hover:brightness-110 active:scale-95"
+              style={{ background: color, color: "#0d1f2d" }}
+            >
+              Clear all filters
+            </button>
+          </div>
+        )}
       </div>
-      
-      {/* Listings Grid */}
-      {loading ? (
-        <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
-          {[1,2,3,4].map(i => (
-            <div key={i} className="rounded-2xl overflow-hidden animate-pulse" style={{ background: "var(--bg-secondary, #132333)", height: 280 }} />
-          ))}
-        </div>
-      ) : filtered.length > 0 ? (
-        <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
-          {filtered.map(listing => (
-            <ListingCard 
-              key={listing.id} 
-              listing={listing} 
-              color={color} 
-              isSaved={saved.includes(listing.id)} 
-              viewerInteraction={viewerInteractionFor(listing, interactionByListingId)}
-              onToggleSave={() => toggleSave(listing.id)} 
-              onOpen={() => setSelectedListing(listing)} 
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center py-16 sm:py-24 gap-4 text-center">
-          <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: `${color}15` }}>
-            <Search size={24} style={{ color }} />
-          </div>
-          <div>
-            <p className="text-sm font-medium" style={{ color: "var(--text-primary, white)" }}>No results found</p>
-            <p className="text-xs mt-1" style={{ color: "#8ca5bc" }}>Try adjusting your search or filters</p>
-          </div>
-          <button 
-            onClick={() => { setSearch(""); setCategory("All"); setShowSaved(false); }} 
-            className="mt-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all hover:brightness-110 active:scale-95"
-            style={{ background: color, color: "#0d1f2d" }}
-          >
-            Clear all filters
-          </button>
-        </div>
-      )}
       
       {selectedListing && (
         <ListingDetailModal listing={selectedListing} color={color} interactionByListingId={interactionByListingId} onClose={() => setSelectedListing(null)} />

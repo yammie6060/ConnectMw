@@ -41,8 +41,8 @@ export default function LegalDocumentPage({ content, slug }: LegalDocumentPagePr
 
             <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-8 items-start">
               <aside
-                className="lg:sticky lg:top-[92px] rounded-2xl p-5"
-                style={{
+              className="lg:sticky lg:top-[92px] rounded-2xl p-5"
+              style={{
                   background: "#0d1f2d",
                   border: "1px solid rgba(255,255,255,0.07)",
                 }}
