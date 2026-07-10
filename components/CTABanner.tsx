@@ -8,7 +8,7 @@ export default function CTABanner() {
   return (
     <div
       className="relative text-center px-[10%] py-[80px] overflow-hidden"
-      
+        style={{
         background: "linear-gradient(135deg,#1b4f6a 0%,#132333 100%)",
         borderTop: "1px solid rgba(245,166,35,0.12)",
         borderBottom: "1px solid rgba(245,166,35,0.12)",
@@ -17,7 +17,7 @@ export default function CTABanner() {
       {/* Glow */}
       <div
         className="absolute pointer-events-none"
-        
+        style={{
           top: "-100px",
           left: "50%",
           transform: "translateX(-50%)",
@@ -40,7 +40,7 @@ export default function CTABanner() {
         </h2>
         <p className="text-[#cde0f0] font-light max-w-[540px] mx-auto mb-8 text-sm leading-[1.7]">
           Whether you&apos;re looking for a home, a haircut, or a hard-to-find spare
-          part — Connect<span  color: "#f5ab20" }}>MW</span> has you
+          part — Connect<span style={{ color: "#f5ab20" }}>MW</span> has you
           covered. Join thousands of Malawians already on the platform.
         </p>
         <div className="flex gap-4 justify-center flex-wrap">
