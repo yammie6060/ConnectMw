@@ -27,8 +27,6 @@ const emptyForm = {
   description: "",
   image_urls: [] as string[],
   is_available: true,
-  // H2 fix: optional per-listing GPS. Left blank, the backend falls back
-  // to the provider's coordinates for geo-search.
   latitude: "",
   longitude: "",
 };
