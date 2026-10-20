@@ -2,7 +2,7 @@ import { Check, CreditCard, Download, Receipt, ShieldCheck, Zap, Crown, Building
 import { PageShell } from '../components/PageShell';
 import { SessionUser } from '../types/dashboard';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+
 
 interface Plan {
   id: string;
@@ -23,7 +23,6 @@ interface BillingPageProps {
   user: SessionUser;
 }
 
-// ─── Role plan data ───────────────────────────────────────────────────────────
 
 const ROLE_PLANS: Record<string, { heading: string; icon: React.ElementType; plans: Plan[] }> = {
   customer: {
@@ -211,9 +210,7 @@ const ROLE_PLANS: Record<string, { heading: string; icon: React.ElementType; pla
   },
 };
 
-// ─── Mock transaction data keyed by plan id ───────────────────────────────────
-// In production this would come from your API. We show NO transactions if the
-// user's active plan is the free tier (priceRaw === 0).
+// Mock transaction data keyed by plan id 
 
 const MOCK_TRANSACTIONS: Record<string, { desc: string; amount: string; date: string; invoice: string }[]> = {
   landlord_pro: [
@@ -235,16 +232,14 @@ const MOCK_TRANSACTIONS: Record<string, { desc: string; amount: string; date: st
   ],
 };
 
-// ─── Component ────────────────────────────────────────────────────────────────
+
 
 export function BillingPage({ color, user }: BillingPageProps) {
   const role = user.role as string;
   const roleMeta = ROLE_PLANS[role] ?? ROLE_PLANS.customer;
   const RoleIcon = roleMeta.icon;
 
-  // Determine active plan: in a real app, read from user.subscription.planId
-  // For the demo we derive it: if user has no subscription, the first plan (free) is current.
-  // Swap "activePlanId" for a real field on SessionUser when you wire up the backend.
+  // Determine active plan: in a real app
   const activePlanId: string = (user as any).activePlanId ?? roleMeta.plans[0].id;
   const activePlan = roleMeta.plans.find(p => p.id === activePlanId) ?? roleMeta.plans[0];
   const isOnFreePlan = activePlan.priceRaw === 0;
